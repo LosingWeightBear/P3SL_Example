@@ -124,7 +124,7 @@ Variable in text: fooiable
 
 > In the first two cases, the trigger character (`$` or `%`) is escaped by repeating it twice. For the format syntax, both `{` and `}` need to be escaped by repeating them.
 
-前两个例子中，通过两次重复触发字符(`$` or `%`)跳过值替换，显示字符本身。格式化语法中重复左右括号跳过值替换。
+前两个例子中，通过两次重复触发字符(`$` or `%`)进行转义跳过值替换，显示字符本身。格式化语法中重复左右括号对其转义。
 第二个例子中的`%(var)s`表示将`var`的值格式化为字符串，即`%s`的格式化效果。
 
 > One key difference between templates and string interpolation or formatting is that the type of the arguments is not taken into account. The values are converted to strings, and the strings are inserted into the result. No formatting options are available. For example, there is no way to control the number of digits used to represent a floating-point value.
@@ -164,3 +164,119 @@ safe_substitute(): foo is here but $missing is not provided
 
 ### 1.1.3 Advanced Templates
 
+> The default syntax for `string.Template` can be changed by adjusting the regular expression patterns it uses to find the variable names in the template body. A simple way to do that is to change the `delimiter` and `idpattern` class attributes.
+
+通过调整匹配模板体中变量名称的正则表达式，可以改变`string.Template`的默认语法。一种简单的方法是改变类属性 `delimiter` 和 `idpattern`。见如下例子：
+
+```python
+# 1_4_string_template_advanced.py
+import string
+
+class MyTemplate(string.Template):
+    delimiter = '%'
+    idpattern = '[a-z]+_[a-z]+'
+
+
+template_text = '''
+    Delimiter : %%
+    Replaced : %with_underscore
+    Ignored : %notunderscored
+'''
+
+
+d = {
+    'with_underscore': 'replaced',
+    'notunderscored': 'not replaced',
+}
+
+t = MyTemplate(template_text)
+print('Modified ID pattern:')
+print(t.safe_substitute(d))
+```
+
+```text
+Modified ID pattern:
+
+    Delimiter : %
+    Replaced : replaced      
+    Ignored : %notunderscored
+```
+
+> In this example, the substitution rules are changed so that the delimiter is `%` instead of `$` and variable names must include an underscore somewhere in the middle. The pattern `%notunderscored` is not replaced by anything, because it does not include an underscore character.
+
+上面这个例子中，新的替换规则使用`%`而非默认的`$`作为分隔符，并且变量名称中间必须含有一个下划线。因此不含有下划线的`%notunderscored`没有被替换。
+
+> For even more complex changes, it is possible to override the pattern attribute and define an entirely new regular expression. The pattern provided must contain four named groups for capturing the escaped delimiter, the named variable, a braced version of the variable name, and invalid delimiter patterns.
+
+对于更复杂的更改，可以通过覆盖模式属性来并定义一个全新的正则表达式。新定义的模式必须含有四个命名组用于捕获转义的定界符、变量名、大括号版本的变量名称、无效的定界符模式。
+
+> The value of `t.pattern` is a compiled regular expression, but the original string is available via its `pattern` attribute.
+
+从例子中可以看到，`t.pattern`的值是已编译的正则表达式，可以通过`t.pattern.pattern`访问`pattern`参数的原始字符串。
+
+
+```python
+# 1_5_string_template_defaultpattern.py
+import string
+
+t = string.Template('$var')
+print(t.pattern)
+print('*' * 50)
+print(t.pattern.pattern)
+```
+
+```text
+re.compile('\n            \\$(?:\n              (?P<escaped>\\$)  |   # Escape sequence of two delimiters\n              (?P<named>(?a:[_a-z][_a-z0-9]*))       |   # delimiter and a Python identifier\n          , re.IGNORECASE|re.VERBOSE)
+**************************************************
+
+            \$(?:
+              (?P<escaped>\$)  |   # Escape sequence of two delimiters
+              (?P<named>(?a:[_a-z][_a-z0-9]*))       |   # delimiter and a Python identifier
+              {(?P<braced>(?a:[_a-z][_a-z0-9]*))} |   # delimiter and a braced identifier   
+              (?P<invalid>)             # Other ill-formed delimiter exprs
+            )
+
+```
+
+
+> This example defines a new pattern to create a new type of template, using `{{var}}` as the
+variable syntax.
+
+以下的例子定义了一个新的模式来创建一个新的模板类(`MyTemplate`)，并使用`{{var}}`作为可变语法。
+
+> Both the `named` and `braced` patterns must be provided separately, even though they are
+the same. Running the sample program generates the following output:
+
+`named` 和 `braced`模式即使相同，也必须单独提供。执行该样例后生成如下结果。
+
+```python
+# 1_6_string_template_newsyntax.py
+import re
+import string
+
+class MyTemplate(string.Template):
+    delimiter = '{{'
+    pattern = r'''
+    \{\{(?:
+    (?P<escaped>\{\{)|
+    (?P<named>[_a-z][_a-z0-9]*)\}\}|
+    (?P<braced>[_a-z][_a-z0-9]*)\}\}|
+    (?P<invalid>)
+    )
+    '''
+
+t = MyTemplate('''
+{{{{
+{{var}}
+''')
+
+print('MATCHES:', t.pattern.findall(t.template))
+print('SUBSTITUTED:', t.safe_substitute(var='replacement'))
+```
+
+```text
+MATCHES: [('{{', '', '', ''), ('', 'var', '', '')]
+SUBSTITUTED: 
+{{
+replacement
+```
