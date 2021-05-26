@@ -280,3 +280,60 @@ SUBSTITUTED:
 {{
 replacement
 ```
+
+### 1.1.4 Formatter
+
+> The `Formatter` class implements the same layout specification language as the `format()` method of `str`. Its features include type coersion, alignment, attribute and field references, named and positional template arguments, and type-specific formatting options. Most of the time the `format()` method is a more convenient interface to these features, but `Formatter` is provided as a way to build subclasses, for cases where variations are needed.
+
+`Formatter`类实现与`str`类的`format()`方法相同的布局规范语言。其特性包括： 类型约束、对齐、属性和字段引用、命名和位置模板参数、以及特定类型的格式选项。大多数时候，对这些特性，`format()`方法是一个更方便的接口，但`Formatter`提供了构建子类型的方式，应对变化的需要。
+
+
+### 1.1.5 Constants
+
+> The `string` module includes a number of constants related to ASCII and numerical character
+sets.
+
+`string` 模块包含了许多与ASCII和数字字符集相关的常量。
+
+> These constants are useful when working with ASCII data, but since it is increasingly common to encounter non-ASCII text in some form of Unicode, their application is limited.
+
+这些常量在处理ASCII数据很有用，但是由于遇到以Unicode形式出现的非ASCII文本越来越普遍，因此他们的应用受到了限制。
+
+```python
+# 1_7_string_constants.py
+import inspect
+import string
+
+def is_str(value):
+    return isinstance(value, str)
+
+for name, value in inspect.getmembers(string, is_str):
+    if name.startswith('_'):
+        continue
+    print('%s=%r\n' % (name, value))
+```
+
+```text
+ascii_letters='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+ascii_lowercase='abcdefghijklmnopqrstuvwxyz'
+
+ascii_uppercase='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+digits='0123456789'
+
+hexdigits='0123456789abcdefABCDEF'
+
+octdigits='01234567'
+
+printable='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c'
+
+punctuation='!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+
+whitespace=' \t\n\r\x0b\x0c'
+```
+
+
+## 1.2 textwrap: Formatting Text Paragraphs 
+格式化文本段落
+
