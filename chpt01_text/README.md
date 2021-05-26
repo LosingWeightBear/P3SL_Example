@@ -337,3 +337,44 @@ whitespace=' \t\n\r\x0b\x0c'
 ## 1.2 textwrap: Formatting Text Paragraphs 
 格式化文本段落
 
+> The `textwrap` module can be used to format text for output in situations where pretty-printing is desired. It offers programmatic functionality similar to the paragraph wrapping or filling features found in many text editors and word processors.
+
+`textwrap`模块可用于在需要精美印刷的场景下格式化输出文本。它提供的编程功能类似于许多文本编辑器和文字处理器中的段落换行或填充功能
+
+### 1.2.1 Example Data
+
+> The examples in this section use the module `textwrap_example.py`, which contains a string
+`sample_text`.
+
+本节中的示例使用模块`textwrap_example.py`，其中包含字符串`sample_text`。
+
+```python
+# textwrap_example.py
+sample_text = '''
+    The textwrap module can be used to format text for output in
+    situations where pretty-printing is desired. It offers
+    programmatic functionality similar to the paragraph wrapping
+    or filling features found in many text editors.
+'''
+```
+
+### 1.2.2 Filling Paragraphs
+
+> The `fill()` function takes text as input and produces formatted text as output.
+
+ `fill()`函数将文本作为输入，并生成格式化的文本作为输出。
+
+```python
+import textwrap
+from textwrap_example import sample_text
+
+print(textwrap.fill(sample_text, width=50))
+```
+
+```text
+The textwrap module can be used to format
+text for output in     situations where pretty-
+printing is desired. It offers     programmatic
+functionality similar to the paragraph wrapping
+or filling features found in many text editors.
+```
