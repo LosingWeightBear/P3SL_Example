@@ -372,9 +372,144 @@ print(textwrap.fill(sample_text, width=50))
 ```
 
 ```text
-The textwrap module can be used to format
+     The textwrap module can be used to format 
 text for output in     situations where pretty-
 printing is desired. It offers     programmatic
 functionality similar to the paragraph wrapping
 or filling features found in many text editors.
 ```
+
+> The results are something less than desirable. The text is now left justified, but the first line retains its indent and the spaces from the front of each subsequent line are embedded in the paragraph.
+
+结果有些差强人意。现在，该文本左对齐，但是第一行保留缩进，并且每行后面的空格都嵌入到该段落中。
+
+
+### 1.2.3 Removing Existing Indentation
+
+> The previous example has embedded tabs and extra spaces mixed into the middle of the output, so it is not formatted very cleanly. Removing the common whitespace prefix from all of the lines in the sample text with `dedent()` produces better results and allows the use of docstrings or embedded multiline strings straight from Python code while removing the formatting of the code itself. The sample string has an artificial indent level introduced for illustrating this feature.
+
+前面的示例在输出的中间有嵌入的制表符和多余的空格，因此它的格式不是很整洁。使用`dedent（)`从示例文本的所有行中删除公共空格前缀会产生更好的结果,并且允许直接从Python代码使用文档字符串或嵌入式多行字符串，同时删除代码本身的格式。
+
+```python
+# 1_10_textwrap_dedent.py
+import textwrap
+from textwrap_example import sample_text
+
+dedented_text = textwrap.dedent(sample_text)
+print('Dedented:')
+print(dedented_text)
+
+whitespace_sample_text = '''
+ Line one.
+   Line two.
+ Line three.
+'''
+dedented_whitespace_sample_text = textwrap.dedent(whitespace_sample_text)
+print('Before Dedent:')
+print(whitespace_sample_text.replace(' ', chr(765)))
+print('After Dedent:')
+print(dedented_whitespace_sample_text.replace(' ', chr(765)))
+```
+
+```text
+Dedented:
+
+The textwrap module can be used to format text for output in
+situations where pretty-printing is desired. It offers
+programmatic functionality similar to the paragraph wrapping
+or filling features found in many text editors.
+
+Before Dedent:
+
+˽Line˽one.
+˽˽˽Line˽two.
+˽Line˽three.
+
+After Dedent:
+
+Line˽one.
+˽˽Line˽two.
+Line˽three.
+```
+
+
+> Since “dedent” is the opposite of “indent,” the result is a block of text with the common initial whitespace from each line removed. If one line is already indented more than another, some of the whitespace will not be removed.
+
+由于“dedent”与“缩进”相反，其结果删除一个文本块中每行的公共初始空格。
+
+如果一行的缩进量已超过另一行，则某些空格将不会被删除。（不会删除多余的缩进空格）
+
+
+### 1.2.4 Combining Dedent and Fill
+
+> Next, the dedented text can be passed through `fill()` with a few different `width` values.
+> This produces outputs in the specified widths.
+
+
+消除缩进的文本与一些不同的宽度值传递给`fill()`。产生指定宽度的输出结果。
+
+
+```python
+# 1_11_textwrap_fill_width.py
+import textwrap
+from textwrap_example import sample_text
+
+dedented_text = textwrap.dedent(sample_text).strip()
+for width in [45, 60]:
+    print('{} Columns:\n'.format(width))
+    print(textwrap.fill(dedented_text, width=width))
+    print()
+```
+
+```text
+45 Columns:
+
+The textwrap module can be used to format
+text for output in situations where pretty-
+printing is desired. It offers programmatic
+functionality similar to the paragraph
+wrapping or filling features found in many
+text editors.
+
+60 Columns:
+
+The textwrap module can be used to format text for output in
+situations where pretty-printing is desired. It offers
+programmatic functionality similar to the paragraph wrapping
+or filling features found in many text editors.
+
+```
+
+### 1.2.5 Indenting Blocks
+> Use the `indent()` function to add consistent prefix text to all of the lines in a string. This example formats the same example text as though it was part of an email message being quoted in the reply, using `>` as the prefix for each line.
+
+使用`indent（）`函数向字符串中的所有行添加一致的前缀文本。本示例使用与电子邮件答复中被引用的信息相同的示例文本格式，使用“>”作为每行的前缀。
+
+> The block of text is split on newlines, the prefix is added to each line that contains text, and then the lines are combined back into a new string and returned.
+
+```python
+# 1_12_textwrap_indent.py
+import textwrap
+from textwrap_example import sample_text
+
+dedented_text = textwrap.dedent(sample_text)
+wrapped = textwrap.fill(dedented_text, width=50)
+wrapped += '\n\nSecond paragraph after a blank line.'
+final = textwrap.indent(wrapped, '> ')
+
+print('Quoted block:\n')
+print(final)
+```
+
+```text
+Quoted block:
+
+>  The textwrap module can be used to format text
+> for output in situations where pretty-printing is
+> desired. It offers programmatic functionality
+> similar to the paragraph wrapping or filling
+> features found in many text editors.
+
+> Second paragraph after a blank line.
+```
+
