@@ -336,6 +336,7 @@ whitespace=' \t\n\r\x0b\x0c'
 
 ## 1.2 textwrap: Formatting Text Paragraphs 
 格式化文本段落
+* Standard library documentation for textwrap. https://docs.python.org/3.5/library/textwrap.html
 
 > The `textwrap` module can be used to format text for output in situations where pretty-printing is desired. It offers programmatic functionality similar to the paragraph wrapping or filling features found in many text editors and word processors.
 
@@ -487,6 +488,8 @@ or filling features found in many text editors.
 
 > The block of text is split on newlines, the prefix is added to each line that contains text, and then the lines are combined back into a new string and returned.
 
+文本块在换行符处进行分割，前缀被添加到包含文本的每一行前，然后这些行重新合并成一个新的字符串并返回。
+
 ```python
 # 1_12_textwrap_indent.py
 import textwrap
@@ -513,3 +516,131 @@ Quoted block:
 > Second paragraph after a blank line.
 ```
 
+> To control which lines receive the new prefix, pass a callable as the `predicate` argument to `indent()`. The callable will be invoked for each line of text in turn and the prefix will be added for lines where the return value is true.
+
+要控制哪些行接收新前缀，将可调用对象作为谓词参数`predicate`传递给`indent()`。依次为文本的每一行调用谓词判断，并为返回值为true的行添加前缀。
+
+> This example adds the prefix EVEN to lines that contain an even number of characters.
+
+本示例将前缀EVEN添加到包含偶数个字符的行。
+
+```python
+# 1_13_textwrap_indent_predicate.py
+import textwrap
+from textwrap_example import sample_text
+
+def should_indent(line):
+    print('Indent {!r}?'.format(line))
+    return len(line.strip()) % 2 == 0
+
+dedented_text = textwrap.dedent(sample_text)
+wrapped = textwrap.fill(dedented_text, width=50)
+final = textwrap.indent(wrapped, 'EVEN ', predicate=should_indent)
+
+print('\nQuoted block:\n')
+print(final)
+```
+
+```text
+Indent ' The textwrap module can be used to format text\n'?
+Indent 'for output in situations where pretty-printing is\n'?
+Indent 'desired. It offers programmatic functionality\n'?
+Indent 'similar to the paragraph wrapping or filling\n'?
+Indent 'features found in many text editors.'?
+
+Quoted block:
+
+EVEN  The textwrap module can be used to format text
+for output in situations where pretty-printing is
+desired. It offers programmatic functionality
+EVEN similar to the paragraph wrapping or filling
+EVEN features found in many text editors.
+```
+
+
+### 1.2.6 Hanging Indents
+
+> In the same way that it is possible to set the width of the output, the indent of the first line can be controlled independently of subsequent lines.
+
+以可能设置输出宽度的相同方式，可以独立于后续行来控制第一行的缩进。？？？
+
+
+> This ability makes it possible to produce a hanging indent, where the first line is indented 
+less than the other lines.
+
+此功能可以产生悬挂缩进，其中第一行的缩进少于其他行。
+
+
+```python
+# 1_14_textwrap_hanging_indent.py
+import textwrap
+from textwrap_example import sample_text
+
+dedented_text = textwrap.dedent(sample_text).strip()
+print(textwrap.fill(dedented_text,
+                    initial_indent='', 
+                    subsequent_indent=' ' * 4, 
+                    width=50,
+                    ))
+```
+
+```text
+The textwrap module can be used to format text for
+    output in situations where pretty-printing is
+    desired. It offers programmatic functionality
+    similar to the paragraph wrapping or filling
+    features found in many text editors.
+```
+
+> The indent values can include non-whitespace characters, too. The hanging indent can be prefixed with * to produce bullet points, for example.
+
+缩进值也可以包含非空格字符。例如，悬挂的缩进可以以*开头，以产生项目要点。
+
+
+### 1.2.7 Truncating Long Text
+
+> To truncate text to create a summary or preview, use `shorten()`. All existing whitespace, such as tabs, newlines, and series of multiple spaces, will be standardized to a single space. Then the text will be truncated to a length less than or equal to what is requested, between word boundaries so that no partial words are included.
+
+使用`shorten()`来删减文本以创建摘要或预览。所有现有的空白，例如制表符，换行符和一系列的多个空格，都将被标准化为一个空格。然后，文本将在单词边界之间被截断为小于或等于所请求的长度，因此不包括不完整的单词。
+
+
+
+```python
+import textwrap
+from textwrap_example import sample_text
+
+dedented_text = textwrap.dedent(sample_text)
+original = textwrap.fill(dedented_text, width=50)
+
+print('Original:\n')
+print(original)
+
+shortened = textwrap.shorten(original, 100)
+shortened_wrapped = textwrap.fill(shortened, width=50)
+
+print('\nShortened:\n')
+print(shortened_wrapped)
+```
+
+```text
+Original:
+
+ The textwrap module can be used to format text
+for output in situations where pretty-printing is
+desired. It offers programmatic functionality
+similar to the paragraph wrapping or filling
+features found in many text editors.
+
+Shortened:
+
+The textwrap module can be used to format text for
+output in situations where pretty-printing [...]
+```
+
+> If non-whitespace text is removed from the original text as part of the truncation, it is replaced with a placeholder value. The default value `[...]` can be replaced by providing a `placeholder` argument to `shorten()`.
+
+如果作为截断的一部分从原始文本中删除了非空白文本, 将被占位符值替换。默认的占位符值`[...]`可以通过`shorten()`的`placeholder`参数替换。
+
+
+
+## 1.3 re: Regular Expressions
