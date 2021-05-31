@@ -651,3 +651,177 @@ output in situations where pretty-printing [...]
 
 
 > Regular expressions are typically used in applications that involve a lot of text processing. For example, they are commonly used as search patterns in text editing programs used by developers, including vi, emacs, and modern IDEs. They are also an integral part of Unix command-line utilities such as sed, grep, and awk. Many programming languages include support for regular expressions in the language syntax (Perl, Ruby, Awk, and Tcl). Other languages, such as C, C++, and Python, support regular expressions through extension libraries.
+
+
+正则表达式通常用于处涉及理大量文本的应用中。例如，经常被用于开发人员的文本编辑软件中作为搜索模式，包括vi，emacs，以及现代的那些IDE。它们也是 Unix 命令行实用程序的组成部分，比如sed，grep和awk。许多编程语言在语言语法中包括对正则表达式的支持（Perl, Ruby, Awk, and Tcl）。其他语言通过扩展库支持正则表达式，如C,C++和python。
+
+
+> Multiple open source implementations of regular expressions exist, each sharing a common core syntax but with different extensions or modifications to their advanced features. The syntax used in Python’s `re` module is based on the syntax used for regular expressions in Perl, with a few Python-specific enhancements.
+
+正则表达式存在多个开源实现，他们公用一个核心语法，但对其他高级功能有不同的扩展或修改。python的`re`模块基于Perl的正则表达式语法，并具有一些 Python 特定的增强功能。
+
+
+### 1.3.1 Finding Patterns in Text
+
+> The most common use for `re` is to search for patterns in text. The `search()` function takes the pattern and text to scan, and returns a `Match` object when the pattern is found. If the pattern is not found, `search()` returns `None`.
+Each `Match` object holds information about the nature of the match, including the original input string, the regular expression used, and the location within the original string where the pattern occurs.
+
+`re` 最常见的用途是在文本中搜索模式。`search()` 函数扫描接受的模式和文本后，并在找到时返回一个 `Match` 对象。如果没有找到模式，返回`None`。
+
+> The `start()` and `end()` methods give the indexes into the string showing where the text
+matched by the pattern occurs.
+
+`start()`和`end()`方法给出字符串的索引，显示匹配的文本在字符串中出现的位置。
+
+```python
+# 1_16_re_simple_match.py
+import re
+pattern = 'this'
+text = 'Does this text match the pattern?'
+
+match = re.search(pattern, text)
+
+s = match.start()
+e = match.end()
+
+print('Found "{}"\nin "{}"\nfrom {} to {} ("{}")'.format(match.re.pattern, match.string, s, e, text[s:e]))
+```
+
+
+```text
+Found "this"
+in "Does this text match the pattern?"
+from 5 to 9 ("this")
+```
+
+
+### 1.3.2 Compiling Expressions
+> Although `re` includes module-level functions for working with regular expressions as text strings, it is more efficient to compile the expressions a program uses frequently. The `compile()` function converts an expression string into a `RegexObject`.
+
+尽管 `re` 包含用于将正则表达式作为文本字符串处理的模块级函数，将表达式编译为经常使用的程序会更有效。`compile()` 函数将表达式字符串转换为 `RegexObject`。
+
+> The module-level functions maintain a cache of compiled expressions, but the size of the cache is limited and using compiled expressions directly avoids the overhead associated with cache lookup. Another advantage of using compiled expressions is that by precompiling all of the expressions when the module is loaded, the compilation work is shifted to application start time, instead of occurring at a point where the program may be responding to a user action.
+
+模块级功能维护已编译表达式的高速缓存，但是高速缓存的大小受到限制，并且直接使用已编译表达式可以避免与高速缓存查找相关的开销。使用编译表达式的另一个优点是，通过在加载模块时预编译所有表达式，编译工作转移到应用程序启动时间，而不是发生在程序可能响应用户操作的时刻。
+
+
+```python
+# 1_17_re_simple_compiled.py
+import re
+# Precompile the patterns.
+regexes = [
+    re.compile(p)
+    for p in ['this', 'that']
+]
+text = 'Does this text match the pattern?'
+
+print('Text: {!r}\n'.format(text))
+
+for regex in regexes:
+    print('Seeking "{}" ->'.format(regex.pattern), end=' ')
+    if regex.search(text):
+        print('match!')
+    else:
+        print('no match')
+```
+
+```text
+Text: 'Does this text match the pattern?'
+
+Seeking "this" -> match!
+Seeking "that" -> no match
+```
+
+### 1.3.3 Multiple Matches
+
+> So far, the example patterns have all used `search()` to look for single instances of literal text strings. The `findall()` function returns all of the substrings of the input that match the pattern without overlapping.
+
+到目前为止，示例模式都使用了`search()` 来查找文字文本字符串的单个实例。`findall()` 函数返回输入中与模式匹配的所有不重叠的子字符串。
+
+> There are two instances of `ab` in the input string.
+
+输入字符串中有两个 `ab` 实例。
+
+```python
+# 1_18_re_findall.py
+import re
+
+text = 'abbaaabbbbaaaaa'
+pattern = 'ab'
+
+for match in re.findall(pattern, text):
+    print('Found {!r}'.format(match))
+```
+
+```text
+Found 'ab'
+Found 'ab'
+```
+
+> `finditer()` returns an iterator that produces Match instances instead of the strings returned by `findall()`.
+
+`finditer()` 返回一个迭代器，它产生 Match 实例而不是 `findall()` 返回的字符串。
+
+> This example finds the same two occurrences of `ab`, and the `Match` instance shows where they are found in the original input.
+
+此示例查找到ab出现了两次，并且Match实例显示了它们在原始输入字符串中被找到的位置。
+
+```python
+# 1_19_re_finditer.py
+import re
+
+text = 'abbaaabbbbaaaaa'
+
+pattern = 'ab'
+
+for match in re.finditer(pattern, text):
+    s = match.start()
+    e = match.end()
+    print('Found {!r} at {:d}:{:d}'.format(text[s:e], s, e))
+```
+
+```text
+Found 'ab' at 0:2
+Found 'ab' at 5:7
+```
+
+### 1.3.4 Pattern Syntax
+> Regular expressions support more powerful patterns than simple literal text strings. Patterns can repeat, can be anchored to different logical locations within the input, and can be expressed in compact forms that do not require every literal character to be present in the pattern. All of these features are used by combining literal text values with `meta-characters` that are part of the regular expression pattern syntax implemented by `re`.
+
+正则表达式比简单的文字文本字符串支持更强大的模式。模式可以重复，可以锚定到输入中的不同逻辑位置，并且可以用不需要每个文字字符都出现在模式中的紧凑形式表达。所有这些功能都是通过将文字文本值与元字符组合来使用的，元字符是`re`实现的正则表达式模式语法的一部分。
+
+```python
+# 1_20_re_test_patterns.py
+import re
+
+def test_patterns(text, patterns):
+    """Given source text and a list of patterns, look for
+    matches for each pattern within the text and print
+    them to stdout.
+    """
+    # Look for each pattern in the text and print the results.
+    for pattern, desc in patterns:
+        print("'{}' ({})\n".format(pattern, desc))
+        print(" '{}'".format(text))
+        for match in re.finditer(pattern, text):
+            s = match.start()
+            e = match.end()
+            substr = text[s:e]
+            n_backslashes = text[:s].count('\\')
+            prefix = '.' * (s + n_backslashes)
+            print(" {}'{}'".format(prefix, substr))
+        print()
+    return
+
+if __name__ == '__main__':
+    test_patterns('abbaaabbbbaaaaa',[('ab', "'a' followed by 'b'"),])
+```
+
+```text
+'ab' ('a' followed by 'b')
+
+ 'abbaaabbbbaaaaa'
+ 'ab'
+ .....'ab'
+
+```
