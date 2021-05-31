@@ -644,3 +644,10 @@ output in situations where pretty-printing [...]
 
 
 ## 1.3 re: Regular Expressions
+
+> Regular expressions are text matching patterns described with a formal syntax. The patterns are interpreted as a set of instructions, which are then executed with a string as input to produce a matching subset or modified version of the original. The term “regular expressions” is frequently shortened to “regex” or “regexp” in conversation. Expressions can include literal text matching, repetition, pattern composition, branching, and other sophisticated rules. A large number of parsing problems are easier to solve with a regular expression than by creating a special-purpose lexer and parser.
+
+正则表达式是用正式语法描述的文本匹配模式。这些模式被解释为一组说明，然后用字符串作为输入执行，以生成原始字符串的匹配子集或修改版本。术语“正则表达式”在上下文中经常缩写为“regex”或“regexp”。表达式可以包括文字文本匹配、重复、模式组合、分支和其他复杂的规则。与创建特殊用途的词法分析程序和解析器相比，大量解析问题使用正则表达式更容易解决。
+
+
+> Regular expressions are typically used in applications that involve a lot of text processing. For example, they are commonly used as search patterns in text editing programs used by developers, including vi, emacs, and modern IDEs. They are also an integral part of Unix command-line utilities such as sed, grep, and awk. Many programming languages include support for regular expressions in the language syntax (Perl, Ruby, Awk, and Tcl). Other languages, such as C, C++, and Python, support regular expressions through extension libraries.
