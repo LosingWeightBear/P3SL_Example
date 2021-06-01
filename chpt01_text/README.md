@@ -790,6 +790,11 @@ Found 'ab' at 5:7
 
 正则表达式比简单的文字文本字符串支持更强大的模式。模式可以重复，可以锚定到输入中的不同逻辑位置，并且可以用不需要每个文字字符都出现在模式中的紧凑形式表达。所有这些功能都是通过将文字文本值与元字符组合来使用的，元字符是`re`实现的正则表达式模式语法的一部分。
 
+> The following examples use `test_patterns()` to explore how variations in patterns change the way they match the same input text. The output shows the input text and the substring range from each portion of the input that matches the pattern.
+
+以下示例使用`test_patterns()` 来探索模式的变化如何改变它们匹配相同输入文本的方式。 输出结果显示输入的文本和与模式匹配的部分的子字符串范围。
+
+
 ```python
 # 1_20_re_test_patterns.py
 import re
@@ -825,3 +830,317 @@ if __name__ == '__main__':
  .....'ab'
 
 ```
+
+
+#### 1.3.4.1 Repetition
+
+> There are five ways to express repetition in a pattern. A pattern followed by the metacharacter * is repeated zero or more times (allowing a pattern to repeat zero times means it does not need to appear at all to match). If the * is replaced with +, the pattern must appear at least once. Using `?` means the pattern appears zero or one time. For a specific number of occurrences, use `{m}` after the pattern, where `m` is the number of times the pattern should repeat. Finally, to allow a variable but limited number of repetitions, use `{m,n}`, where `m` is the minimum number of repetitions and `n` is the maximum. Leaving out `n` (`{m,}`) means the value must appear at least `m` times, with no maximum.
+
+在模式中有五种方法可以表达重复。模式后的通配符 `*` 表示重复零次或多次（允许模式重复零次意味着它根本不需要出现）。`+`表示模式至少出现一次。`?`表示该模式出现零次或一次。对于特定的出现次数，在模式后使用 `{m}`，其中 `m` 是模式应该重复的次数。最后，要允许可变但有限的重复次数，请使用`{m,n}`，其中`m`是最小重复次数，`n`是最大重复次数。省略`n` (`{m,}`) 意味着匹配的值必须至少出现 `m` 次，没有最大值。
+
+> In this example, there are more matches for `ab*` and `ab?` than `ab+`.
+
+例子中，`ab*` 和 `ab?` 的匹配结果比`ab+`多。
+
+
+
+```python
+# 1_21_re_repetition.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [('ab*', 'a followed by zero or more b'),
+    ('ab+', 'a followed by one or more b'),
+    ('ab?', 'a followed by zero or one b'),
+    ('ab{3}', 'a followed by three b'),
+    ('ab{2,3}', 'a followed by two to three b')],
+)
+```
+
+```text
+'ab*' (a followed by zero or more b)
+
+ 'abbaabbba'
+ 'abb'      
+ ...'a'     
+ ....'abbb' 
+ ........'a'
+
+'ab+' (a followed by one or more b)
+
+ 'abbaabbba'
+ 'abb'
+ ....'abbb'
+
+'ab?' (a followed by zero or one b)
+
+ 'abbaabbba'
+ 'ab'
+ ...'a'
+ ....'ab'
+ ........'a'
+
+'ab{3}' (a followed by three b)
+
+ 'abbaabbba'
+ ....'abbb'
+
+'ab{2,3}' (a followed by two to three b)
+
+ 'abbaabbba'
+ 'abb'
+ ....'abbb'
+
+```
+
+
+> When processing a repetition instruction, `re` will usually consume as much of the input as possible while matching the pattern. This so-called `greedy` behavior may result in fewer individual matches, or the matches may include more of the input text than intended. Greediness can be turned off by following the repetition instruction with `?`.
+
+在处理重复指令时，`re` 通常会在匹配模式时消耗尽可能多的输入。这种所谓的“贪婪”行为可能会导致更少的单独匹配，或者或者匹配可能包含比预期更多的输入文本。可以通过在重复通配符后使用`?`关闭贪婪模式。
+
+> Disabling greedy consumption of the input for any of the patterns where zero occurrences of `b` are allowed means the matched substring does not include any `b` characters.
+
+对于允许`b` 出现零次的任何模式，禁用输入的贪婪消耗意味着匹配的子字符串不包含任何`b`字符。
+
+```python
+# 1_22_re_repetition_non_greedy.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [('ab*?', 'a followed by zero or more b'),
+    ('ab+?', 'a followed by one or more b'),
+    ('ab??', 'a followed by zero or one b'),
+    ('ab{3}?', 'a followed by three b'),
+    ('ab{2,3}?', 'a followed by two to three b')],
+)
+```
+
+```text
+'ab*?' (a followed by zero or more b)
+
+ 'abbaabbba'
+ 'a'
+ ...'a'
+ ....'a'
+ ........'a'
+
+'ab+?' (a followed by one or more b)
+
+ 'abbaabbba'
+ 'ab'
+ ....'ab'
+
+'ab??' (a followed by zero or one b)
+
+ 'abbaabbba'
+ 'a'
+ ...'a'
+ ....'a'
+ ........'a'
+
+'ab{3}?' (a followed by three b)
+
+ 'abbaabbba'
+ ....'abbb'
+
+'ab{2,3}?' (a followed by two to three b)
+
+ 'abbaabbba'
+ 'abb'
+ ....'abb'
+
+```
+
+
+#### 1.3.4.2 Character Sets
+
+> A *character set* is a group of characters, any one of which can match at that point in the pattern. For example, `[ab]` would match either `a` or `b`.
+
+字符集是一组字符，其中任何一个都可以匹配模式中那个位置。例如，`[ab]` 将匹配 `a` 或 `b`。
+
+> The greedy form of the expression (`a[ab]+`) consumes the entire string because the first letter is `a` and every subsequent character is either `a` or `b`.
+
+表达式 (`a[ab]+`) 的贪婪形式会消耗整个字符串，因为第一个字母是 `a`，随后的每个字符都是 `a` 或 `b`。
+
+```python
+# 1_23_re_charset.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [('[ab]', 'either a or b'),
+    ('a[ab]+', 'a followed by 1 or more a or b'),
+    ('a[ab]+?', 'a followed by 1 or more a or b, not greedy')],
+)
+```
+
+
+```text
+'[ab]' (either a or b)
+
+ 'abbaabbba'
+ 'a'        
+ .'b'       
+ ..'b'      
+ ...'a'     
+ ....'a'    
+ .....'b'   
+ ......'b'  
+ .......'b' 
+ ........'a'
+
+'a[ab]+' (a followed by 1 or more a or b)
+
+ 'abbaabbba'
+ 'abbaabbba'
+
+'a[ab]+?' (a followed by 1 or more a or b, not greedy)
+
+ 'abbaabbba'
+ 'ab'
+ ...'aa'
+
+```
+
+
+> A character set can also be used to exclude specific characters. The carat (`^`) means to look for characters that are not in the set following the carat.
+
+字符集还可以用于排除特点字符， 脱字符(`^`) 表示查找不在脱字符之后的集合中的字符。(注：这里`^`符号的英文应该是**caret**，而不是carat)
+
+> This pattern finds all of the substrings that do not contain the characters `-`, `.`, or a space.
+
+此模式查找所有不包含字符 `-`、`.` 或空格的子字符串。
+
+```python
+# 1_24_re_charset_exclude.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'This is some text -- with punctuation.',
+    [('[^-. ]+', 'sequences without -, ., or space')],
+)
+```
+
+```text
+'[^-. ]+' (sequences without -, ., or space)
+
+ 'This is some text -- with punctuation.'
+ 'This'
+ .....'is'
+ ........'some'
+ .............'text'
+ .....................'with'
+ ..........................'punctuation'
+```
+
+> As character sets grow larger, typing every character that should (or should not) match becomes tedious. A more compact format using *character ranges* can be used to define a character set to include all of the contiguous characters between the specified start and stop points.
+
+随着字符集变得越来越大，键入每个应该（或不应该）匹配的字符变得单调乏味。使用字符范围这一更紧凑的格式，可用于定义字符集以包含指定开始点和停止点之间的所有连续字符。
+
+> Here the range `a-z` includes the lowercase ASCII letters, and the range `A-Z` includes the uppercase ASCII letters. The ranges can also be combined into a single character set.
+
+这里范围`a-z` 包括小写的ASCII字母，范围`A-Z`包括大写的ASCII 字母。多个字符范围也可以合并成一个字符集。
+
+```python
+# 1_25_re_charset_ranges.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'This is some text -- with punctuation.',
+    [('[a-z]+', 'sequences of lowercase letters'),
+    ('[A-Z]+', 'sequences of uppercase letters'),
+    ('[a-zA-Z]+', 'sequences of lower- or uppercase letters'),
+    ('[A-Z][a-z]+', 'one uppercase followed by lowercase')],
+)
+```
+
+```text
+'[a-z]+' (sequences of lowercase letters)
+
+ 'This is some text -- with punctuation.'
+ .'his'
+ .....'is'
+ ........'some'
+ .............'text'
+ .....................'with'
+ ..........................'punctuation'
+
+'[A-Z]+' (sequences of uppercase letters)
+
+ 'This is some text -- with punctuation.'
+ 'T'
+
+'[a-zA-Z]+' (sequences of lower- or uppercase letters)
+
+ 'This is some text -- with punctuation.'
+ 'This'
+ .....'is'
+ ........'some'
+ .............'text'
+ .....................'with'
+ ..........................'punctuation'
+
+'[A-Z][a-z]+' (one uppercase followed by lowercase)
+
+ 'This is some text -- with punctuation.'
+ 'This'
+
+```
+
+> As a special case of a character set, the meta-character dot, or period (`.`), indicates that the pattern should match any single character in that position.
+
+作为字符集的特殊情况，元字符点, 即句点符 (`.`)， 表示该模式在该位置应该匹配任何单个字符。
+
+> Combining the dot with repetition can result in very long matches, unless the non-greedy form is used.
+
+除非使用非贪婪形式，否则将句点符与重复组合会导致很长的匹配。
+
+```python
+# 1_26_re_charset_dot.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [('a.', 'a followed by any one character'),
+    ('b.', 'b followed by any one character'),
+    ('a.*b', 'a followed by anything, ending in b'),
+    ('a.*?b', 'a followed by anything, ending in b')],
+)
+```
+
+```text
+'a.' (a followed by any one character)
+
+ 'abbaabbba'
+ 'ab'
+ ...'aa'
+
+'b.' (b followed by any one character)
+
+ 'abbaabbba'
+ .'bb'
+ .....'bb'
+ .......'ba'
+
+'a.*b' (a followed by anything, ending in b)
+
+ 'abbaabbba'
+ 'abbaabbb'
+
+'a.*?b' (a followed by anything, ending in b)
+
+ 'abbaabbba'
+ 'ab'
+ ...'aab'
+
+```
+
+
+#### 1.3.4.3 Escape Codes
+
+> An even more compact representation uses escape codes for several predefined character sets. The escape codes recognized by `re` are listed in Table 1.1.
+
+使用转义码可以更简洁的表示一些预定义的字符集。`re`可识别的转义码如下：
+
