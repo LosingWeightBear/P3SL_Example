@@ -1118,7 +1118,7 @@ test_patterns(
  ...'aa'
 
 'b.' (b followed by any one character)
-
+\\
  'abbaabbba'
  .'bb'
  .....'bb'
@@ -1144,3 +1144,302 @@ test_patterns(
 
 使用转义码可以更简洁的表示一些预定义的字符集。`re`可识别的转义码如下：
 
+
+|Code|Meaning| |
+|--|--|--|
+| `\d` | A digit | 数字 |
+| `\D` | A non-digit | 非数字 |
+| `\s` | Whitespace (tab, space, newline, etc.) | 空白（制表符、空格、换行等） | `\S` | Non-whitespace | 非空 |
+| `\w` | Alphanumeric | 字母数字 |
+| `\W` | Non-alphanumeric | 非字母数字 |
+
+> Escapes are indicated by prefixing the character with a backslash (`\`). Unfortunately, a backslash must itself be escaped in normal Python strings, and that results in difficult-to-read expressions. Using raw strings, which are created by prefixing the literal value with `r`, eliminates this problem and maintains readability.
+
+在字符前加上反斜杠 (`\`) 来表示转义。不幸的是，反斜杠本身必须在普通 Python 字符串中进行转义，这会导致难以阅读的表达式。通过在文字值前面加上 `r` 来创建原始字符串，可以消除这个问题并保持代码的可读性。
+
+> These sample expressions combine escape codes with repetition to find sequences of like characters in the input string.
+
+这些示例表达式将转义码与重复组合在一起，以查找输入字符串中相似的字符序列。
+
+```python
+# 1_27_re_escape_codes.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'A prime #1 example!',
+    [(r'\d+', 'sequence of digits'),
+    (r'\D+', 'sequence of non-digits'),
+    (r'\s+', 'sequence of whitespace'),
+    (r'\S+', 'sequence of non-whitespace'),
+    (r'\w+', 'alphanumeric characters'),
+    (r'\W+', 'non-alphanumeric')],
+)
+```
+
+```text
+'\d+' (sequence of digits)
+
+ 'A prime #1 example!'        
+ .........'1'
+
+'\D+' (sequence of non-digits)
+
+ 'A prime #1 example!'
+ 'A prime #'
+ ..........' example!'
+
+'\s+' (sequence of whitespace)
+
+ 'A prime #1 example!'
+ .' '
+ .......' '
+ ..........' '
+
+'\S+' (sequence of non-whitespace)
+
+ 'A prime #1 example!'
+ 'A'
+ ..'prime'
+ ........'#1'
+ ...........'example!'
+
+'\w+' (alphanumeric characters)
+
+ 'A prime #1 example!'
+ 'A'
+ ..'prime'
+ .........'1'
+ ...........'example'
+
+'\W+' (non-alphanumeric)
+
+ 'A prime #1 example!'
+ .' '
+ .......' #'
+ ..........' '
+ ..................'!'
+```
+
+> To match the characters that are part of the regular expression syntax, escape the characters in the search pattern.
+
+要匹配作为正则表达式语法一部分的字符，请对搜索模式中的字符进行转义。
+
+> The pattern in this example escapes the backslash and plus characters, since both are meta-characters and have special meaning in a regular expression.
+
+此示例中的模式转义了反斜纹和加号，因为两者都是元字符，在常规表达中具有特殊含义。
+
+```python
+# 1_28_re_escape_escapes.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    r'\d+ \D+ \s+',
+    [(r'\\.\+', 'escape code')],
+)
+```
+
+```text
+'\\.\+' (escape code)
+
+ '\d+ \D+ \s+'
+ '\d+'
+ .....'\D+'
+ ..........'\s+'
+```
+
+
+#### 1.3.4.4 Anchoring
+
+> In addition to describing the content of a pattern to match, the relative location can be specified in the input text where the pattern should appear by using anchoring instructions. Table 1.2 lists valid anchoring codes.
+
+除了描述要匹配的模式的内容外，还可以在输入文本中通过锚定指令指定模式应该出现的相关位置。表1.2 列出了有效的锚定代码。
+
+|Code|Meaning||
+|--|--|--|
+| `^` | Start of string, or line | 字符串或行的开始 |
+| `$` | End of string, or line| 字符串或行的末尾 |
+| `\A` | Start of string | 字符串开始 |
+| `\Z` | End of string | 字符串末尾 |
+| `\b` | Empty string at the beginning or end of a word | 单词开头或结尾的空字符串 |
+| `\B` | Empty string not at the beginning or end of a word | 不在单词的开头或结尾的空字符串 |
+
+> The patterns in the example for matching words at the beginning and the end of the string are different because the word at the end of the string is followed by punctuation to terminate the sentence. The pattern `\w+$` would not match, since `.` is not considered an alphanumeric character.
+
+示例中，在字符串开头和末尾匹配单词的模式不同，因为在字符串末尾的单词后面跟着标点符号来终止句子。模式`\w+$`将不匹配，因为`.`不被视为字母数字字符。
+
+```python
+# 1_29_re_anchoring.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'This is some text -- with punctuation.',
+    [(r'^\w+', 'word at start of string'),
+    (r'\A\w+', 'word at start of string'),
+    (r'\w+\S*$', 'word near end of string'),
+    (r'\w+\S*\Z', 'word near end of string'),
+    (r'\w*t\w*', 'word containing t'),
+    (r'\bt\w+', 't at start of word'),
+    (r'\w+t\b', 't at end of word'),
+    (r'\Bt\B', 't, not start or end of word')],
+)
+```
+
+```text
+'^\w+' (word at start of string)
+
+ 'This is some text -- with punctuation.'
+ 'This'
+
+'\A\w+' (word at start of string)
+
+ 'This is some text -- with punctuation.'
+ 'This'
+
+'\w+\S*$' (word near end of string)
+
+ 'This is some text -- with punctuation.'
+ ..........................'punctuation.'
+
+'\w+\S*\Z' (word near end of string)
+
+ 'This is some text -- with punctuation.'
+ ..........................'punctuation.'
+
+'\w*t\w*' (word containing t)
+
+ 'This is some text -- with punctuation.'
+ .............'text'
+ .....................'with'
+ ..........................'punctuation'
+
+'\bt\w+' (t at start of word)
+
+ 'This is some text -- with punctuation.'
+ .............'text'
+
+'\w+t\b' (t at end of word)
+
+ 'This is some text -- with punctuation.'
+ .............'text'
+
+'\Bt\B' (t, not start or end of word)
+
+ 'This is some text -- with punctuation.'
+ .......................'t'
+ ..............................'t'
+ .................................'t'
+
+```
+
+
+
+### 1.3.5 Constraining the Search
+
+> In situations where it is known in advance that only a subset of the full input should be searched, the regular expression match can be further constrained by telling `re` to limit the search range. For example, if the pattern must appear at the front of the input, then using `match()` instead of `search()` will anchor the search without having to explicitly include an
+anchor in the search pattern.
+
+如果事先知道只应搜索完整输入的子集，则可以通过告诉`re`限制搜索范围来进一步限制正则表达式匹配。例如，如果模式必须出现在输入的前面，则使用`match()`而不是`search()`将锚定搜索，而不必在搜索模式中明确包含锚点。
+
+> Since the literal text `is` does not appear at the start of the input text, it is not found using `match()`. The sequence appears two other times in the text, though, so `search()` finds it.
+
+由于输入文本开头没有显示字面文本`is`，因此不会使用`match()`找到。不过，该序列在文本中还显示了另外两次，因此`search()`会找到它。
+
+```python
+# 1_30_re_match.py
+import re
+
+text = 'This is some text -- with punctuation.'
+pattern = 'is'
+
+print('Text :', text)
+print('Pattern:', pattern)
+
+m = re.match(pattern, text)
+print('Match :', m)
+s = re.search(pattern, text)
+print('Search :', s)
+```
+
+```text
+Text : This is some text -- with punctuation.
+Pattern: is
+Match : None
+Search : <re.Match object; span=(2, 4), match='is'>
+```
+
+
+
+> The `fullmatch()` method requires that the entire input string match the pattern.
+
+`fullmatch()`方法要求整个输入字符串与模式匹配。
+
+> Here `search()` shows that the pattern does appear in the input, but it does not consume all of the input so `fullmatch()` does not report a match.
+
+本例中`search()`显示模式确实出现在输入中，但它不消耗所有的输入，所以`fullmatch()`不报告匹配。
+
+```python
+# 1_31_re_fullmatch.py
+import re
+
+text = 'This is some text -- with punctuation.'
+pattern = 'is'
+
+print('Text :', text)
+print('Pattern :', pattern)
+
+m = re.search(pattern, text)
+print('Search :', m)
+
+s = re.fullmatch(pattern, text)
+print('Full match :', s)
+```
+
+```text
+Text : This is some text -- with punctuation.
+Pattern : is
+Search : <re.Match object; span=(2, 4), match='is'>
+Full match : None
+```
+
+
+> The `search()` method of a compiled regular expression accepts optional start and end position parameters to limit the search to a substring of the input.
+
+编译后的正则表达式的`search()`方法接受可选的开始和结束位置参数，以将搜索限制为输入的子字符串。
+
+
+> This example implements a less efficient form of `iterall()`. Each time a match is found, the end position of that match is used for the next search.
+
+此示例实现了效率较低的`iterall()`。每次找到匹配项时，该匹配的最终位置被用于下一次搜索。
+
+
+```python
+# 1_32_re_search_substring.py
+import re
+
+text = 'This is some text -- with punctuation.'
+pattern = re.compile(r'\b\w*is\w*\b')
+
+print('Text:', text)
+print()
+
+pos = 0
+while True:
+    match = pattern.search(text, pos)
+    if not match:
+        break
+    s = match.start()
+    e = match.end()
+    print(' {:>2d} : {:>2d} = "{}"'.format(s, e - 1, text[s:e]))
+    # Move forward in text for the next search.
+    pos = e
+```
+
+```text
+Text: This is some text -- with punctuation.
+
+  0 :  3 = "This"
+  5 :  6 = "is"
+```
+
+
+### 1.3.6 Dissecting Matches with Groups
