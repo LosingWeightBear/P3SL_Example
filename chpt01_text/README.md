@@ -1443,3 +1443,347 @@ Text: This is some text -- with punctuation.
 
 
 ### 1.3.6 Dissecting Matches with Groups
+
+> Searching for pattern matches is the basis of the powerful capabilities provided by regular expressions. Adding *groups* to a pattern isolates parts of the matching text, expanding those capabilities to create a parser. Groups are defined by enclosing patterns in parentheses.
+
+搜索模式匹配是正则表达式提供的强大功能的基础。将组添加到模式可以隔离匹配文本的部分，扩展这些功能以创建解析器。组是通过将模式括在括号中来定义的。
+
+> Any complete regular expression can be converted to a group and nested within a larger expression. All of the repetition modifiers can be applied to a group as a whole, requiring the entire group pattern to repeat.
+
+任何完整的正则表达式均可以转换为组并嵌套在更大的表达式中。所有重复修饰符都可以作为一个整体应用于一个组，需要整个组模式重复。
+
+
+
+```python
+# 1_33_re_groups.py
+from re_test_patterns import test_patterns
+
+test_patterns(
+    'abbaaabbbbaaaaa',
+    [('a(ab)', 'a followed by literal ab'),
+    ('a(a*b*)', 'a followed by 0-n a and 0-n b'),
+    ('a(ab)*', 'a followed by 0-n ab'),
+    ('a(ab)+', 'a followed by 1-n ab')],
+)
+```
+
+```text
+'a(ab)' (a followed by literal ab)
+
+ 'abbaaabbbbaaaaa'
+ ....'aab'
+
+'a(a*b*)' (a followed by 0-n a and 0-n b)
+
+ 'abbaaabbbbaaaaa'
+ 'abb'
+ ...'aaabbbb'
+ ..........'aaaaa'
+
+'a(ab)*' (a followed by 0-n ab)
+
+ 'abbaaabbbbaaaaa'
+ 'a'
+ ...'a'
+ ....'aab'
+ ..........'a'
+ ...........'a'
+ ............'a'
+ .............'a'
+ ..............'a'
+
+'a(ab)+' (a followed by 1-n ab)
+
+ 'abbaaabbbbaaaaa'
+ ....'aab'
+
+```
+
+
+> To access the substrings matched by the individual groups within a pattern, use the `groups()`
+method of the `Match` object.
+
+要访问模式中各个组匹配的子字符串，使用`Match`对象的`groups()`方法。
+
+> `Match.groups()` returns a sequence of strings in the order of the groups within the
+expression that matches the string.
+
+`Match.groups()`按照表达式中与字符串匹配的组的顺序返回字符串序列。
+
+```python
+# 1_34_re_groups_match.py
+import re
+
+text = 'This is some text -- with punctuation.'
+
+print(text)
+print()
+
+patterns = [
+    (r'^(\w+)', 'word at start of string'),
+    (r'(\w+)\S*$', 'word at end, with optional punctuation'),
+    (r'(\bt\w+)\W+(\w+)', 'word starting with t, another word'),
+    (r'(\w+t)\b', 'word ending with t'),
+]
+
+for pattern, desc in patterns:
+    regex = re.compile(pattern)
+    match = regex.search(text)
+    print("'{}' ({})\n".format(pattern, desc))
+    print(' ', match.groups())
+    print()
+```
+
+```text
+This is some text -- with punctuation.
+
+'^(\w+)' (word at start of string)
+
+  ('This',)
+
+'(\w+)\S*$' (word at end, with optional punctuation)
+
+  ('punctuation',)
+
+'(\bt\w+)\W+(\w+)' (word starting with t, another word)
+
+  ('text', 'with')
+
+'(\w+t)\b' (word ending with t)
+
+  ('text',)
+
+```
+
+
+> To ask for the match of a single group, use the `group()` method. This is useful when grouping is being used to find parts of the string, but some of the parts matched by groups are not needed in the results.
+
+要请求单个组的匹配，请使用 `group()` 方法。这在使用分组查找字符串部分时很有用，但结果中不需要某些与组匹配的部分。
+
+
+> Group `0` represents the string matched by the entire expression, and subgroups are numbered starting with `1` in the order that their left parenthesis appears in the expression.
+
+组“0”代表整个表达式匹配的字符串，子组从“1”开始按其左括号出现在表达式中的顺序编号。
+
+
+```python
+# 1_35_re_groups_individual.py
+import re
+
+text = 'This is some text -- with punctuation.'
+
+print('Input text :', text)
+
+# Word starting with 't' then another word
+regex = re.compile(r'(\bt\w+)\W+(\w+)')
+print('Pattern :', regex.pattern)
+
+match = regex.search(text)
+print('Entire match :', match.group(0))
+print('Word starting with "t":', match.group(1))
+print('Word after "t" word :', match.group(2))
+```
+
+
+```text
+Input text : This is some text -- with punctuation.
+Pattern : (\bt\w+)\W+(\w+)
+Entire match : text -- with
+Word starting with "t": text
+Word after "t" word : with
+```
+
+
+> Python extends the basic grouping syntax to add named groups. Using names to refer to groups makes it easier to modify the pattern over time, without having to also modify the code using the match results. To set the name of a group, use the syntax (`?P<name>pattern`).
+
+Python 扩展了基本分组语法以添加命名组。使用名称来引用组可以更轻松地随时间修改模式，而不必在使用匹配结果时修改代码。使用如下语法设置组名字：`?P<name>pattern`。
+
+> Use `groupdict()` to retrieve the dictionary mapping group names to substrings from the match. Named patterns are included in the ordered sequence returned by `groups()` as well.
+
+使用`groupdict()` 从匹配中检索将组名映射到子字符串的字典。命名模式也包含在`groups()` 返回的有序序列中。
+
+
+
+```python
+# 1_36_re_groups_named.py
+import re
+
+text = 'This is some text -- with punctuation.'
+
+print(text)
+
+print()
+patterns = [
+    r'^(?P<first_word>\w+)',
+    r'(?P<last_word>\w+)\S*$',
+    r'(?P<t_word>\bt\w+)\W+(?P<other_word>\w+)',
+    r'(?P<ends_with_t>\w+t)\b',
+]
+
+for pattern in patterns:
+    regex = re.compile(pattern)
+    match = regex.search(text)
+    print("'{}'".format(pattern))
+    print(' ', match.groups())
+    print(' ', match.groupdict())
+    print()
+```
+
+
+```text
+This is some text -- with punctuation.
+
+'^(?P<first_word>\w+)'
+  ('This',)
+  {'first_word': 'This'}
+
+'(?P<last_word>\w+)\S*$'
+  ('punctuation',)
+  {'last_word': 'punctuation'}
+
+'(?P<t_word>\bt\w+)\W+(?P<other_word>\w+)'
+  ('text', 'with')
+  {'t_word': 'text', 'other_word': 'with'}
+
+'(?P<ends_with_t>\w+t)\b'
+  ('text',)
+  {'ends_with_t': 'text'}
+
+```
+
+
+> An updated version of `test_patterns()` that shows the numbered and named groups matched by a pattern will make the following examples easier to follow.
+
+显示与模式匹配的编号和命名组的`test_patterns()`的更新版本将使以下示例更容易理解。
+
+
+```python
+# re_test_patterns.py
+import re
+
+def test_patterns(text, patterns):
+    """Given source text and a list of patterns, look for
+    matches for each pattern within the text and print
+    them to stdout.
+    """
+    # Look for each pattern in the text and print the results.
+    for pattern, desc in patterns:
+        print('{!r} ({})\n'.format(pattern, desc))
+        print(' {!r}'.format(text))
+        for match in re.finditer(pattern, text):
+            s = match.start()
+            e = match.end()
+            prefix = ' ' * (s)
+            print(' {}{!r}{} '.format(prefix,text[s:e],' ' * (len(text) - e)),end=' ',)
+            print(match.groups())
+            if match.groupdict():
+                print('{}{}'.format(' ' * (len(text) - s),match.groupdict()),)
+        print()
+    return
+
+```
+
+> Since a group is itself a complete regular expression, groups can be nested within other
+groups to build even more complicated expressions.
+
+由于组本身就是一个完整的正则表达式，因此组可以嵌套在其他组中以构建更复杂的表达式。
+
+> In this case, the group (`a*`) matches an empty string, so the return value from `groups()` includes that empty string as the matched value.
+
+在这种情况下，组 (`a*`) 匹配一个空字符串，因此`groups()`的返回值包括该空字符串作为匹配值。
+
+```python
+# 1_38_re_groups_nested.py
+from re_test_patterns_groups import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [(r'a((a*)(b*))', 'a followed by 0-n a and 0-n b')],
+)
+```
+
+```text
+'a((a*)(b*))' (a followed by 0-n a and 0-n b)
+
+ 'abbaabbba'
+ 'abb'        ('bb', '', 'bb')
+    'aabbb'   ('abbb', 'a', 'bbb')
+         'a'  ('', '', '')
+
+```
+
+
+> Groups are also useful for specifying alternative patterns. Use the pipe symbol (`|`) to indicate that either pattern should match. Consider the placement of the pipe carefully, though. The first expression in this example matches a sequence of `a` followed by a sequence consisting entirely of a single letter, `a` or `b`. The second pattern matches `a` followed by a sequence that may include either `a` or `b`. The patterns are similar, but the resulting matches are completely different.
+
+组对于指定替代模式也很有用。使用竖线符号 (`|`) 表示任一模式都应匹配。仔细考虑管道的放置。此示例中的第一个表达式匹配一个序列“a”，后跟一个完全由单个字母“a”或“b”组成的序列。第二个模式匹配 `a` 后跟一个可能包含 `a` 或 `b` 的序列。模式相似，但结果匹配完全不同。
+
+
+> When an alternative group is not matched, but the entire pattern does match, the return value of `groups()` includes a `None` value at the point in the sequence where the alternative group should appear.
+
+当替代组不匹配，但整个模式确实匹配时，`groups()` 的返回值在替代组应该出现的序列点处包括一个 `None` 值。
+
+
+```python
+# 1_39_re_groups_alternative.py
+from re_test_patterns_groups import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [(r'a((a+)|(b+))', 'a then seq. of a or seq. of b'),
+    (r'a((a|b)+)', 'a then seq. of [ab]')],
+)
+```
+
+```text
+'a((a+)|(b+))' (a then seq. of a or seq. of b)
+
+ 'abbaabbba'
+ 'abb'        ('bb', None, 'bb') 
+    'aa'      ('a', 'a', None)   
+
+'a((a|b)+)' (a then seq. of [ab])
+
+ 'abbaabbba'
+ 'abbaabbba'  ('bbaabbba', 'a')  
+
+```
+
+
+> Defining a group containing a subpattern is also useful in cases where the string matching the subpattern is not part of what should be extracted from the full text. These kinds of groups are called non-capturing. Non-capturing groups can be used to describe repetition patterns or alternatives, without isolating the matching portion of the string in the value returned. To create a non-capturing group, use the syntax (`?:pattern`).
+
+在匹配子模式的字符串不是应从全文中提取的内容的一部分的情况下，定义包含子模式的组也很有用。这些类型的组称为非捕获组。非捕获组可用于描述重复模式或替代方案，而无需隔离返回值中字符串的匹配部分。要创建非捕获组，使用语法`?:pattern`。
+
+> In the following example, compare the groups returned for the capturing and noncapturing forms of a pattern that matches the same results.
+
+通过以下示例中，比较捕获和非捕获形式返回的组匹配相同结果的。
+
+```python
+# 1_40_re_groups_noncapturing.py
+from re_test_patterns_groups import test_patterns
+
+test_patterns(
+    'abbaabbba',
+    [(r'a((a+)|(b+))', 'capturing form'),
+    (r'a((?:a+)|(?:b+))', 'noncapturing')],
+)
+```
+
+
+```text
+'a((a+)|(b+))' (capturing form)
+
+ 'abbaabbba'
+ 'abb'        ('bb', None, 'bb')
+    'aa'      ('a', 'a', None)
+
+'a((?:a+)|(?:b+))' (noncapturing)
+
+ 'abbaabbba'
+ 'abb'        ('bb',)
+    'aa'      ('a',)
+
+```
+
+
+### 1.3.7 Search Options
+
