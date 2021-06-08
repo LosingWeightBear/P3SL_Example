@@ -1787,3 +1787,138 @@ test_patterns(
 
 ### 1.3.7 Search Options
 
+> Option flags are used to change the way the matching engine processes an expression. The flags can be combined using a bitwise OR operation, then passed to `compile()`, `search()`, `match()`, and other functions that accept a pattern for searching.
+ 
+选项标志用于更改匹配引擎处理表达式的方式。这些标志可以使用按位 OR 操作组合，然后传递给 `compile()`、`search()`、`match()` 和其他接受模式进行搜索的函数。
+
+#### 1.3.7.1 Case-Insensitive Matching
+
+> **IGNORECASE** causes literal characters and character ranges in the pattern to match both uppercase and lowercase characters.
+
+IGNORECASE使模式中的文字字符和字符范围同时匹配大写和小写字符。
+
+> Since the pattern includes the literal `T`, if **IGNORECASE** is not set, the only match is the word `This`. When case is ignored, `text` also matches.
+
+由于模式包含文字`T`，如果未设置IGNORECASE，则唯一匹配的是单词`This`当忽略大小写时，`text` 也匹配。
+
+```python
+# 1_41_re_flags_ignorecase.py
+import re
+
+text = 'This is some text -- with punctuation.'
+pattern = r'\bT\w+'
+with_case = re.compile(pattern)
+without_case = re.compile(pattern, re.IGNORECASE)
+
+print('Text:\n {!r}'.format(text))
+print('Pattern:\n {}'.format(pattern))
+print('Case-sensitive:')
+for match in with_case.findall(text):
+    print(' {!r}'.format(match))
+print('Case-insensitive:')
+for match in without_case.findall(text):
+    print(' {!r}'.format(match))
+```
+
+```text
+Text:
+ 'This is some text -- with punctuation.'
+Pattern:
+ \bT\w+
+Case-sensitive:
+ 'This'
+Case-insensitive:
+ 'This'
+ 'text'
+```
+
+#### 1.3.7.2 Input with Multiple Lines
+
+> Two flags affect how searching in multiline input works: **MULTILINE** and **DOTALL**. The
+**MULTILINE** flag controls how the pattern matching code processes anchoring instructions
+for text containing newline characters. When multiline mode is turned on, the anchor rules
+for `^` and `$` apply at the beginning and end of each line, in addition to the entire string.
+
+有两个标志会影响在多行输入中搜索的工作方式：**MULTILINE** 和 **DOTALL**。**MULTILINE** 标志控制模式匹配代码如何处理包含换行符的文本的锚定指令。当打开多行模式时，`^` 和 `$` 的锚规则适用于每行的开头和结尾，以及整个字符串。
+
+> The pattern in the example matches the first or last word of the input. It matches `line.` at the end of the string, even though there is no newline.
+
+示例中的模式匹配输入的第一个或最后一个单词。它匹配字符串末尾的 `line.`，即使没有换行符。
+
+```python
+# 1_42_re_flags_multiline.py
+import re
+
+text = 'This is some text -- with punctuation.\nA second line.'
+pattern = r'(^\w+)|(\w+\S*$)'
+single_line = re.compile(pattern)
+multiline = re.compile(pattern, re.MULTILINE)
+
+print('Text:\n {!r}'.format(text))
+print('Pattern:\n {}'.format(pattern))
+print('Single Line :')
+for match in single_line.findall(text):
+    print(' {!r}'.format(match))
+print('Multline :')
+for match in multiline.findall(text):
+    print(' {!r}'.format(match))
+```
+
+
+```text
+Text:
+ 'This is some text -- with punctuation.\nA second line.'
+Pattern:
+ (^\w+)|(\w+\S*$)
+Single Line :
+ ('This', '')
+ ('', 'line.')
+Multline :
+ ('This', '')
+ ('', 'punctuation.')
+ ('A', '')
+ ('', 'line.')
+```
+
+> **DOTALL** is the other flag related to multiline text. Normally, the dot character (`.`) matches everything in the input text except a newline character. The flag allows the dot to match newlines as well.
+
+**DOTALL** 是另一个与多行文本相关的标志。通常，点字符 (`.`) 匹配输入文本中除换行符之外的所有内容。该标志也允许点匹配换行符。
+
+> Without the flag, each line of the input text matches the pattern separately. Adding the flag causes the entire string to be consumed.
+
+如果没有标志，输入文本的每一行都分别与模式匹配。添加标志会导致消耗整个字符串。
+
+
+```python
+# 1_43_re_flags_dotall.py
+import re
+
+text = 'This is some text -- with punctuation.\nA second line.'
+pattern = r'.+'
+no_newlines = re.compile(pattern)
+dotall = re.compile(pattern, re.DOTALL)
+
+print('Text:\n {!r}'.format(text))
+print('Pattern:\n {}'.format(pattern))
+print('No newlines :')
+for match in no_newlines.findall(text):
+    print(' {!r}'.format(match))
+print('Dotall :')
+for match in dotall.findall(text):
+    print(' {!r}'.format(match))
+```
+
+
+```text
+Text:
+ 'This is some text -- with punctuation.\nA second line.'
+Pattern:
+ .+
+No newlines :
+ 'This is some text -- with punctuation.'
+ 'A second line.'
+Dotall :
+ 'This is some text -- with punctuation.\nA second line.'
+```
+
+
