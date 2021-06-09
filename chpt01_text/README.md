@@ -1922,3 +1922,39 @@ Dotall :
 ```
 
 
+#### 1.3.7.3 Unicode
+
+> Under Python 3, `str` objects use the full Unicode character set, and regular expression processing on a `str` assumes that the pattern and input text are both Unicode. The escape codes described earlier are defined in terms of Unicode by default. Those assumptions mean that the pattern `\w+` will match both the words “French” and “Français”. To restrict escape codes to the ASCII character set, as was the default in Python 2, use the `ASCII` flag when compiling the pattern or when calling the module-level functions `search()` and `match()`.
+
+在 Python 3 下，`str` 对象使用完整的 Unicode 字符集，并且对 `str` 的正则表达式处理假定模式和输入文本都是 Unicode。默认情况下，前面描述的转义码是根据 Unicode 定义的。这些假设意味着模式`\w+` 将匹配单词“French”和“Français”。要将转义码限制为 ASCII 字符集，这是 Python 2 中的默认设置，请在编译模式或调用模块级函数 `search()` 和 `match()` 时使用 `ASCII` 标志。
+
+
+> The other escape sequences (`\W`, `\b`, `\B`, `\d`, `\D`, `\s`, and `\S`) are also processed differently for ASCII text. Instead of consulting the Unicode database to find the properties of each character, `re` uses the `ASCII` definition of the character set identified by the escape sequence.
+
+对于 ASCII 文本，其他转义序列（`\W`、`\b`、`\B`、`\d`、`\D`、`\s` 和 `\S`）也有不同的处理方式。`re` 不是通过查询 Unicode 数据库来查找每个字符的属性，而是使用由转义序列标识的字符集的 `ASCII` 定义。
+
+```python
+# 1_44_re_flags_ascii.py
+import re
+
+text = u'Français łzoty Österreich'
+pattern = r'\w+'
+ascii_pattern = re.compile(pattern, re.ASCII)
+unicode_pattern = re.compile(pattern)
+
+print('Text :', text)
+print('Pattern :', pattern)
+print('ASCII :', list(ascii_pattern.findall(text)))
+print('Unicode :', list(unicode_pattern.findall(text)))
+```
+
+```text
+Text : Français łzoty Österreich
+Pattern : \w+
+ASCII : ['Fran', 'ais', 'zoty', 'sterreich'] 
+Unicode : ['Français', 'łzoty', 'Österreich']
+```
+
+
+
+
