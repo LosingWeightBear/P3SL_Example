@@ -2174,3 +2174,479 @@ Embedded flags can be combined by placing them within the same group. For exampl
 |MULTILINE|m|
 |DOTALL|s|
 |VERBOSE|x|
+
+
+### 1.3.8 Looking Ahead or Behind
+
+> In many cases, it is useful to match a part of a pattern only if some other part will also match. For example, in the email parsing expression, the angle brackets were marked as optional. Realistically, the brackets should be paired, and the expression should match only if both are present, or neither is. This modified version of the expression uses a positive look ahead assertion to match the pair. The look ahead assertion syntax is (`?=pattern`).
+
+在许多情况下，仅当其他部分也匹配时才匹配模式的一部分是有用的。例如，在电子邮件解析表达式中，尖括号被标记为可选。实际上，括号应该成对出现，并且表达式应该只在两者都存在或都不存在时匹配。该表达式的修改版本使用积极的前瞻断言来匹配该对。前瞻断言语法是 (`?=pattern`)。
+
+> There are several important changes in this version of the expression. First, the name portion is no longer optional. That means stand-alone addresses do not match, but it also prevents improperly formatted name/address combinations from matching. The positive look ahead rule after the “name” group asserts that either the remainder of the string is wrapped with a pair of angle brackets, or there is not a mismatched bracket; either both or neither of the brackets is present. The look ahead is expressed as a group, but the match for a look ahead group does not consume any of the input text, so the rest of the pattern picks up from the same spot after the look ahead matches.
+
+这个版本的表达式有几个重要的变化。首先，名称部分不再是可选的。这意味着独立地址不匹配，但它也防止格式不正确的名称/地址组合匹配。“name”组后的正向前瞻规则断言字符串的其余部分用一对尖括号括起来，或者没有不匹配的括号。要么两个括号都存在，要么都不存在。预读表示为一个组，但预读组的匹配不消耗任何输入文本，因此在预读匹配后，模式的其余部分从同一位置选取。
+
+```python
+import re
+
+address = re.compile(
+    '''
+    # A name is made up of letters, and may include "."
+    # for title abbreviations and middle initials.
+    ((?P<name>
+    ([\w.,]+\s+)*[\w.,]+
+    )
+    \s+
+    ) # The name is no longer optional.
+    # LOOKAHEAD
+    # Email addresses are wrapped in angle brackets, but only
+    # if both are present or neither is.
+    (?= (<.*>$) # Remainder wrapped in angle brackets
+    |
+    ([^<].*[^>]$) # Remainder *not* wrapped in angle brackets
+    )
+    <? # Optional opening angle bracket
+    # The address itself: username@domain.tld
+    (?P<email>
+    [\w\d.+-]+ # Username
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+    )
+    >? # Optional closing angle bracket
+    ''',
+    re.VERBOSE)
+
+candidates = [
+    u'First Last <first.last@example.com>',
+    u'No Brackets first.last@example.com',
+    u'Open Bracket <first.last@example.com',
+    u'Close Bracket first.last@example.com>',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Name :', match.groupdict()['name'])
+        print(' Email:', match.groupdict()['email'])
+    else:
+        print(' No match')
+```
+
+```text
+Candidate: First Last <first.last@example.com>
+ Name : First Last
+ Email: first.last@example.com
+Candidate: No Brackets first.last@example.com   
+ Name : No Brackets
+ Email: first.last@example.com
+Candidate: Open Bracket <first.last@example.com 
+ No match
+Candidate: Close Bracket first.last@example.com>
+ No match
+```
+
+
+> A negative look ahead assertion (`(?!pattern)`) says that the pattern does not match
+the text following the current point. For example, the email recognition pattern could
+be modified to ignore the `noreply` mailing addresses commonly used by automated
+systems.
+
+否定前瞻断言 (`(?!pattern)`) 表示该模式与当前点之后的文本不匹配。例如，可以修改电子邮件识别模式以忽略自动化系统常用的`noreply`邮寄地址。
+
+> The address starting with `noreply` does not match the pattern, since the look ahead assertion fails.
+
+以`noreply`开头的地址与模式不匹配，因为前瞻断言失败。
+
+```python
+import re
+
+address = re.compile(
+    '''
+    ^
+    # An address: username@domain.tld
+    # Ignore noreply addresses.
+    (?!noreply@.*$)
+    [\w\d.+-]+ # Username
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+    $
+    ''',
+    re.VERBOSE)
+
+candidates = [
+    u'first.last@example.com',
+    u'noreply@example.com',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Match:', candidate[match.start():match.end()])
+    else:
+        print(' No match')
+```
+
+```text
+Candidate: first.last@example.com
+ Match: first.last@example.com
+Candidate: noreply@example.com
+ No match
+```
+
+
+> Instead of looking ahead for noreply in the username portion of the email address, the pattern can alternatively be written using a negative look behind assertion after the username is matched using the syntax `(?<!pattern)`.
+
+与在电子邮件地址的用户名部分中查找 noreply 不同，该模式也可以在使用语法匹配用户名后使用否定回溯断言来编写。
+
+> Looking backward works a little differently than looking ahead, in that the expression must use a fixed-length pattern. Repetitions are allowed, as long as there is a fixed number of them (no wildcards or ranges).
+
+向后看与向前看有点不同，因为表达式必须使用固定长度的模式。允许重复，只要它们的数量是固定的（没有通配符或范围）。
+
+```python
+import re
+address = re.compile(
+    '''
+    ^
+
+    # An address: username@domain.tld
+
+    [\w\d.+-]+ # Username
+
+    # Ignore noreply addresses.
+    (?<!noreply)
+
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+
+    $
+    ''',
+    re.VERBOSE)
+
+candidates = [
+    u'first.last@example.com',
+    u'noreply@example.com',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Match:', candidate[match.start():match.end()])
+    else:   
+        print(' No match')
+```
+
+```text
+Candidate: first.last@example.com
+ Match: first.last@example.com
+Candidate: noreply@example.com
+ No match
+```
+
+
+
+> A positive look behind assertion can be used to find text following a pattern using the syntax `(?<=pattern)`. In the following example, the expression finds Twitter handles.
+
+断言背后的积极查找可用于使用语法`(?<=pattern)` 来查找遵循模式的文本。在以下示例中，表达式查找 Twitter 句柄。
+
+> The pattern matches sequences of characters that can make up a Twitter handle, as long as they are preceded by an `@`.
+
+该模式匹配可以构成 Twitter 句柄的字符序列，只要它们前面有一个 `@`。
+
+```python
+# 1_52_re_look_behind.py
+import re
+
+twitter = re.compile(
+    '''
+    # A twitter handle: @username
+    (?<=@)
+    ([\w\d_]+) # Username
+    ''',
+    re.VERBOSE)
+
+text = '''This text includes two Twitter handles.
+One for @ThePSF, and one for the author, @doughellmann.
+'''
+
+print(text)
+for match in twitter.findall(text):
+    print('Handle:', match)
+```
+
+```text
+This text includes two Twitter handles.
+One for @ThePSF, and one for the author, @doughellmann.
+
+Handle: ThePSF      
+Handle: doughellmann
+```
+
+
+
+### 1.3.9 Self-Referencing Expressions
+
+> Matched values can be used in later parts of an expression. For example, the email example can be updated to match only addresses composed of the first and last names of the person by including back-references to those groups. The easiest way to achieve this is by referring to the previously matched group by ID number, using `\num`.
+
+匹配值可用于表达式的后面部分。例如，可以更新电子邮件示例以通过包括对这些组的反向引用来仅匹配由该人的名字和姓氏组成的地址。实现这一点的最简单方法是通过 ID 号引用先前匹配的组，使用 `\num`。
+
+> Although the syntax is simple, creating back-references by numerical ID has a few disadvantages. From a practical standpoint, as the expression changes, the groups must be counted again and every reference may need to be updated. Another disadvantage is that only 99 references can be made using the standard back-reference syntax `\n`, because if the ID number is three digits long, it will be interpreted as an octal character value instead of a group reference. Of course, if there are more than 99 groups in an expression, there will be more serious maintenance challenges than simply not being able to refer to all of them.
+
+尽管语法很简单，但通过数字 ID 创建反向引用有一些缺点。从实际的角度来看，随着表达式的变化，必须再次对组进行计数，并且可能需要更新每个引用。另一个缺点是使用标准的反向引用语法“\n”只能进行 99 次引用，因为如果 ID 号是三位数长，它将被解释为八进制字符值而不是组引用。当然，如果一个表达式中有超过 99 个组，那么维护方面的挑战会比简单地不能引用所有这些组更严重。
+
+```python
+import re
+
+address = re.compile(
+    r'''
+
+    # The regular name
+    (\w+) # First name
+    \s+
+    (([\w.]+)\s+)? # Optional middle name or initial
+    (\w+) # Last name
+
+    \s+
+
+    <
+
+    # The address: first_name.last_name@domain.tld
+    (?P<email>
+    \1 # First name
+    \.
+    \4 # Last name
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+    )
+
+    >
+    ''',
+    re.VERBOSE | re.IGNORECASE)
+
+candidates = [
+    u'First Last <first.last@example.com>',
+    u'Different Name <first.last@example.com>',
+    u'First Middle Last <first.last@example.com>',
+    u'First M. Last <first.last@example.com>',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Match name :', match.group(1), match.group(4))
+        print(' Match email:', match.group(5))
+    else:
+        print(' No match')
+```
+
+
+```text
+Candidate: First Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+Candidate: Different Name <first.last@example.com>
+ No match
+Candidate: First Middle Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+Candidate: First M. Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+```
+
+
+> Python’s expression parser includes an extension that uses `(?P=name)` to refer to the value of a named group matched earlier in the expression.
+
+Python 的表达式解析器包含一个扩展，它使用 `(?P=name)` 来引用表达式中较早匹配的命名组的值。
+
+> The address expression is compiled with the `IGNORECASE` flag on, since proper names are normally capitalized but email addresses are not.
+
+地址表达式编译时打开了 `IGNORECASE` 标志，因为专有名称通常大写，但电子邮件地址不是。
+
+```python
+# 1_54_re_refer_to_named_group.py
+import re
+
+address = re.compile(
+    '''
+
+    # The regular name
+    (?P<first_name>\w+)
+    \s+
+    (([\w.]+)\s+)? # Optional middle name or initial
+    (?P<last_name>\w+)
+
+    \s+
+    
+    <
+
+    # The address: first_name.last_name@domain.tld
+    (?P<email>
+    (?P=first_name)
+    \.
+    (?P=last_name)
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+    )
+    
+    >
+    ''',
+    re.VERBOSE | re.IGNORECASE)
+
+candidates = [
+    u'First Last <first.last@example.com>',
+    u'Different Name <first.last@example.com>',
+    u'First Middle Last <first.last@example.com>',
+    u'First M. Last <first.last@example.com>',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Match name :', match.groupdict()['first_name'],end=' ')
+        print(match.groupdict()['last_name'])
+        print(' Match email:', match.groupdict()['email'])
+    else:
+        print(' No match')
+```
+
+```text
+Candidate: First Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+Candidate: Different Name <first.last@example.com>
+ No match
+Candidate: First Middle Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+Candidate: First M. Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+```
+
+
+
+> The other mechanism for using back-references in expressions chooses a different pattern based on whether a previous group matched. The email pattern can be corrected so that the angle brackets are required if a name is present, and not required if the email address is by itself. The syntax for testing whether a group has matched is `(?(id)yes-expression|no-expression)`, where `id` is the group name or number, `yes-expression` is the pattern to use if the group has a value, and `no-expression` is the pattern to use otherwise.
+
+
+在表达式中使用反向引用的另一种机制根据前一组是否匹配来选择不同的模式。可以更正电子邮件模式，以便在名称存在时需要尖括号，如果电子邮件地址本身不需要尖括号。
+测试组是否匹配的语法是 `(?(id)yes-expression|no-expression)`，其中 `id` 是组名或编号，`yes-expression` 是如果组匹配使用的模式有一个值，并且 `no-expression` 是其他情况下要使用的模式。
+
+
+
+> This version of the email address parser uses two tests. If the `name` group matches, then the look ahead assertion requires both angle brackets and sets up the `brackets` group. If `name` is not matched, the assertion requires the rest of the text to not have angle brackets around it. Later, if the `brackets` group is set, the actual pattern matching code consumes the brackets in the input using literal patterns; otherwise, it consumes any blank space.
+
+此版本的电子邮件地址解析器使用两个测试。如果 `name` 组匹配，则前瞻断言需要两个尖括号并设置 `brackets` 组。如果 `name` 不匹配，则断言要求文本的其余部分周围没有尖括号。稍后，如果设置了 `brackets` 组，则实际的模式匹配代码使用文字模式消耗输入中的括号；否则，它会消耗任何空白空间。
+
+
+
+```python
+# 1_55_re_id.py
+import re
+address = re.compile(
+    '''
+    ^
+
+    # A name is made up of letters, and may include "."
+    # for title abbreviations and middle initials.
+    (?P<name>
+    ([\w.]+\s+)*[\w.]+
+    )?
+    \s*
+
+    # Email addresses are wrapped in angle brackets, but
+    # only if a name is found.
+    (?(name)
+    # Remainder wrapped in angle brackets because
+    # there is a name
+    (?P<brackets>(?=(<.*>$)))
+    |
+    # Remainder does not include angle brackets without name
+    (?=([^<].*[^>]$))
+    )
+
+    # Look for a bracket only if the look-ahead assertion
+    # found both of them.
+    (?(brackets)<|\s*)
+    
+    # The address itself: username@domain.tld
+    (?P<email>
+    [\w\d.+-]+ # Username
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+    )
+    
+    # Look for a bracket only if the look-ahead assertion
+    # found both of them.
+    (?(brackets)>|\s*)
+
+    $
+    ''',
+    re.VERBOSE)
+
+candidates = [
+    u'First Last <first.last@example.com>',
+    u'No Brackets first.last@example.com',
+    u'Open Bracket <first.last@example.com',
+    u'Close Bracket first.last@example.com>',
+    u'no.brackets@example.com',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Match name :', match.groupdict()['name'])
+        print(' Match email:', match.groupdict()['email'])
+    else:
+        print(' No match')
+```
+
+```text
+Candidate: First Last <first.last@example.com>
+ Match name : First Last
+ Match email: first.last@example.com
+Candidate: No Brackets first.last@example.com
+ No match
+Candidate: Open Bracket <first.last@example.com
+ No match
+Candidate: Close Bracket first.last@example.com>
+ No match
+Candidate: no.brackets@example.com
+ Match name : None
+ Match email: no.brackets@example.com
+```
+
+
+### 1.3.10 Modifying Strings with Patterns
+
+
+> In addition to searching through text, `re` supports modifying text using regular expressions as the search mechanism, and the replacements can reference groups matched in the pattern as part of the substitution text. Use `sub()` to replace all occurrences of a pattern with another string.
+
+除了搜索文本之外，`re` 支持使用正则表达式作为搜索机制修改文本，并且替换可以引用模式中匹配的组作为替换文本的一部分。使用 `sub()` 用另一个字符串替换所有出现的模式。
+
+
+```python
+
+```
+
+
+```text
+
+```
+
+
+
+
+
+### 1.3.11 Splitting with Patterns
