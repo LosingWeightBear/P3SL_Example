@@ -1956,5 +1956,221 @@ Unicode : ['Français', 'łzoty', 'Österreich']
 ```
 
 
+#### 1.3.7.4 Verbose Expression Syntax
+
+> The compact format of regular expression syntax can become a hindrance as expressions grow more complicated. As the number of groups in an expression increases, it will be more work to keep track of why each element is needed and how exactly the parts of the expression interact. Using named groups helps mitigate these issues, but a better solution is to use *verbose mode expressions*, which allow comments and extra whitespace to be embedded in the pattern.
+
+> A pattern to validate email addresses will illustrate how verbose mode makes working with regular expressions easier. The first version recognizes addresses that end in one of three top-level domains: `.com`, `.org`, or `.edu`.
 
 
+随着表达式变得越来越复杂，正则表达式语法的紧凑格式可能会成为一个障碍。随着表达式中组数的增加，跟踪为什么需要每个元素以及表达式的各个部分如何准确交互将需要更多的工作。使用命名组有助于缓解这些问题，但更好的解决方案是使用*详细模式表达式*，它允许在模式中嵌入注释和额外的空格。
+
+验证电子邮件地址的模式将说明详细模式如何使使用正则表达式更容易。第一个版本识别以三个顶级域之一结尾的地址：`.com`、`.org` 或`.edu`。
+
+> This expression is already complex. There are several character classes, groups, and repetition expressions.
+
+这个表达已经很复杂了。有多个字符类、组和重复表达式。
+
+```python
+# 1_45_re_email_compact.py
+import re
+address = re.compile('[\w\d.+-]+@([\w\d.]+\.)+(com|org|edu)')
+
+candidates = [
+    u'first.last@example.com',
+    u'first.last+category@gmail.com',
+    u'valid-address@mail.example.com',
+    u'not-valid@example.foo',
+]
+for candidate in candidates:
+    match = address.search(candidate)
+    print('{:<30} {}'.format(candidate, 'Matches' if match else 'No match'))
+```
+
+```text
+first.last@example.com         Matches
+first.last+category@gmail.com  Matches
+valid-address@mail.example.com Matches
+not-valid@example.foo          No match
+```
+
+
+> Converting the expression to a more verbose format will make it easier to extend.
+
+将表达式转换为更详细的格式将使其更易于扩展。
+
+> The expression matches the same inputs, but in this extended format it is easier to read. The comments also help identify different parts of the pattern so that it can be expanded to match more inputs.
+
+该表达式匹配相同的输入，但在这种扩展格式中更易于阅读。注释还有助于识别模式的不同部分，以便可以对其进行扩展以匹配更多输入。
+
+```python
+# 1_46_re_email_verbose.py
+import re
+
+address = re.compile(
+    '''
+    [\w\d.+-]+ # Username
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # TODO: support more top-level domains
+    ''',
+    re.VERBOSE)
+
+candidates = [
+    u'first.last@example.com',
+    u'first.last+category@gmail.com',
+    u'valid-address@mail.example.com',
+    u'not-valid@example.foo',
+]
+
+for candidate in candidates:
+    match = address.search(candidate)
+    print('{:<30} {}'.format(candidate, 'Matches' if match else 'No match'),)
+```
+
+
+```text
+first.last@example.com         Matches
+first.last+category@gmail.com  Matches      
+valid-address@mail.example.com Matches      
+not-valid@example.foo          No match 
+```
+
+
+> This expanded version parses inputs that include a person’s name and email address, as might appear in an email header. The name comes first and stands on its own, and the email address follows, surrounded by angle brackets (`<` and `>`).
+
+此扩展版本解析包含个人姓名和电子邮件地址的输入，这些输入可能会出现在电子邮件标题中。名称首先出现并独立存在，然后是电子邮件地址，并用尖括号（`<` 和 `>`）括起来。
+
+> As with other programming languages, the ability to insert comments into verbose regular expressions helps with their maintainability. This final version includes implementation notes to future maintainers and whitespace to separate the groups from each other and highlight their nesting level.
+
+与其他编程语言一样，在冗长的正则表达式中插入注释的能力有助于它们的可维护性。这个最终版本包括对未来维护者的实现说明和空格，以将组彼此分开并突出它们的嵌套级别。
+
+```python
+# 1_47_re_email_with_name.py
+import re
+
+address = re.compile(
+    '''
+    # A name is made up of letters, and may include "."
+    # for title abbreviations and middle initials.
+    ((?P<name>
+    ([\w.,]+\s+)*[\w.,]+)
+    \s*
+    # Email addresses are wrapped in angle
+    # brackets < >, but only if a name is
+    # found, so keep the start bracket in this
+    # group.
+    <
+    )? # The entire name is optional.
+    # The address itself: username@domain.tld
+    (?P<email>
+    [\w\d.+-]+ # Username
+    @
+    ([\w\d.]+\.)+ # Domain name prefix
+    (com|org|edu) # Limit the allowed top-level domains.
+    )
+    >? # Optional closing angle bracket.
+    ''',
+    re.VERBOSE)
+
+candidates = [
+    u'first.last@example.com',
+    u'first.last+category@gmail.com',
+    u'valid-address@mail.example.com',
+    u'not-valid@example.foo',
+    u'First Last <first.last@example.com>',
+    u'No Brackets first.last@example.com',
+    u'First Last',
+    u'First Middle Last <first.last@example.com>',
+    u'First M. Last <first.last@example.com>',
+    u'<first.last@example.com>',
+]
+
+for candidate in candidates:
+    print('Candidate:', candidate)
+    match = address.search(candidate)
+    if match:
+        print(' Name :', match.groupdict()['name'])
+        print(' Email:', match.groupdict()['email'])
+    else:
+        print(' No match')
+```
+
+```text
+Candidate: first.last@example.com
+ Name : None
+ Email: first.last@example.com
+Candidate: first.last+category@gmail.com 
+ Name : None
+ Email: first.last+category@gmail.com    
+Candidate: valid-address@mail.example.com
+ Name : None
+ Email: valid-address@mail.example.com
+Candidate: not-valid@example.foo
+ No match
+Candidate: First Last <first.last@example.com>
+ Name : First Last
+ Email: first.last@example.com
+Candidate: No Brackets first.last@example.com
+ Name : None
+ Email: first.last@example.com
+Candidate: First Last
+ No match
+Candidate: First Middle Last <first.last@example.com>
+ Name : First Middle Last
+ Email: first.last@example.com
+Candidate: First M. Last <first.last@example.com>
+ Name : First M. Last
+ Email: first.last@example.com
+Candidate: <first.last@example.com>
+ Name : None
+ Email: first.last@example.com
+```
+
+
+#### 1.3.7.5 Embedding Flags in Patterns
+
+> In situations where flags cannot be added when compiling an expression, such as when a pattern is passed as an argument to a library function that will compile it later, the flags can be embedded inside the expression string itself. For example, to turn case-insensitive matching on, add (`?i`) to the beginning of the expression.
+
+在编译表达式时无法添加标志的情况下，例如当模式作为参数传递给稍后将编译它的库函数时，可以将标志嵌入表达式字符串本身中。例如，要打开不区分大小写的匹配，将 (`?i`) 添加到表达式的开头。
+
+
+> Because the options control the way the entire expression is evaluated or parsed, they should always appear at the beginning of the expression.
+
+由于选项控制整个表达式的求值或解析方式，因此它们应始终出现在表达式的开头。
+
+
+```python
+# 1_48_re_flags_embedded.py
+import re
+
+text = 'This is some text -- with punctuation.'
+pattern = r'(?i)\bT\w+'
+regex = re.compile(pattern)
+
+print('Text :', text)
+print('Pattern :', pattern)
+print('Matches :', regex.findall(text))
+```
+
+```text
+Text : This is some text -- with punctuation.
+Pattern : (?i)\bT\w+
+Matches : ['This', 'text']
+```
+
+
+> The abbreviations for all of the flags are listed in Table 1.3. (Table 1.3: Regular Expression Flag
+Abbreviations)
+Embedded flags can be combined by placing them within the same group. For example, (`?im`) turns on case-insensitive matching for multiline strings.
+
+嵌入的标志可以通过将它们放在同一组中来组合。例如， (`?im`) 为多行字符串打开不区分大小写的匹配。
+
+
+|Flag|Abbreviation|
+|----| :----: |
+|ASCII|a|
+|IGNORECASE|i|
+|MULTILINE|m|
+|DOTALL|s|
+|VERBOSE|x|
