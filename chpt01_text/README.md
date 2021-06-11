@@ -2635,18 +2635,106 @@ Candidate: no.brackets@example.com
 
 除了搜索文本之外，`re` 支持使用正则表达式作为搜索机制修改文本，并且替换可以引用模式中匹配的组作为替换文本的一部分。使用 `sub()` 用另一个字符串替换所有出现的模式。
 
+> References to the text matched by the pattern can be inserted using the `\num` syntax used for back-references.
+
+可以使用用于反向引用的 `\num` 语法插入对与模式匹配的文本的引用。
+
 
 ```python
+# 1_56_re_sub.py
+import re
 
+bold = re.compile(r'\*{2}(.*?)\*{2}')
+
+text = 'Make this **bold**. This **too**.'
+
+print('Text:', text)
+print('Bold:', bold.sub(r'<b>\1</b>', text))
 ```
 
 
 ```text
-
+Text: Make this **bold**. This **too**.
+Bold: Make this <b>bold</b>. This <b>too</b>.
 ```
 
 
+> To use named groups in the substitution, use the syntax `\g<name>`.
+
+要在替换中使用命名组，使用语法 `\g`。
+
+> The `\g<name>` syntax also works with numbered references, and using it eliminates any ambiguity between group numbers and surrounding literal digits.
+
+`\g<name>`语法也适用于编号引用，使用它可以消除组编号和周围文字数字之间的任何歧义。
 
 
+```python
+# 1_57_re_sub_named_groups.py
+import re
+
+bold = re.compile(r'\*{2}(?P<bold_text>.*?)\*{2}')
+
+text = 'Make this **bold**. This **too**.'
+
+print('Text:', text)
+print('Bold:', bold.sub(r'<b>\g<bold_text></b>', text))
+```
+
+```text
+Text: Make this **bold**. This **too**.
+Bold: Make this <b>bold</b>. This <b>too</b>.
+```
+
+
+> Pass a value to `count` to limit the number of substitutions performed.
+
+将值传递给 `count` 以限制执行的替换次数。
+
+> Only the first substitution is made because `count` is 1.
+
+因为 `count` 是 1，所以只进行了第一次替换。
+
+```python
+# 1_58_re_sub_count.py
+import re
+
+bold = re.compile(r'\*{2}(.*?)\*{2}')
+
+text = 'Make this **bold**. This **too**.'
+
+print('Text:', text)
+print('Bold:', bold.sub(r'<b>\1</b>', text, count=1))
+```
+
+```text
+Text: Make this **bold**. This **too**.
+Bold: Make this <b>bold</b>. This **too**.
+```
+
+> `subn()` works just like `sub()` except that it returns both the modified string and the count of substitutions made.
+
+`subn()` 的工作方式与 `sub()` 类似，不同之处在于它返回修改后的字符串和替换的次数。
+
+> The search pattern matches twice in the example.
+
+示例中的搜索模式匹配两次。
+
+```python
+# 1_59_re_subn.py
+import re
+
+bold = re.compile(r'\*{2}(.*?)\*{2}')
+
+text = 'Make this **bold**. This **too**.'
+
+print('Text:', text)
+print('Bold:', bold.subn(r'<b>\1</b>', text))
+```
+
+
+```text
+Text: Make this **bold**. This **too**.
+Bold: ('Make this <b>bold</b>. This <b>too</b>.', 2)
+```
 
 ### 1.3.11 Splitting with Patterns
