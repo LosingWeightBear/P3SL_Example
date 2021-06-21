@@ -733,5 +733,95 @@ m2["c"] = E
 
 
 ```python
+# 2_17_collections_counter_init.py
+import collections
+
+print(collections.Counter(['a', 'b', 'c', 'a', 'b', 'b']))
+print(collections.Counter({'a': 2, 'b': 3, 'c': 1}))
+print(collections.Counter(a=2, b=3, c=1))
 ```
 
+```text
+Counter({'b': 3, 'a': 2, 'c': 1})
+Counter({'b': 3, 'a': 2, 'c': 1})
+Counter({'b': 3, 'a': 2, 'c': 1})
+```
+
+
+> An empty `Counter` can be constructed with no arguments and populated via the `update()` method.
+
+> The count values are increased based on the new data, rather than replaced. In the preceding example, the count for `a` goes from `3` to `4`.
+
+计数值根据新数据增加，而不是被替换。在前面的示例中，`a` 的计数从`3`变为`4`。
+
+```python
+# 2_18_collections_counter_update.py
+import collections
+
+c = collections.Counter()
+print('Initial :', c)
+
+c.update('abcdaab')
+print('Sequence:', c)
+
+c.update({'a': 1, 'd': 5})
+print('Dict :', c)
+```
+
+```text
+Initial : Counter()
+Sequence: Counter({'a': 3, 'b': 2, 'c': 1, 'd': 1})
+Dict : Counter({'d': 6, 'a': 4, 'b': 2, 'c': 1})
+```
+
+#### 2.2.2.2 Accessing Counts
+
+> Once a `Counter` is populated, its values can be retrieved using the dictionary API.
+
+填充`Counter`后，可以使用字典 API 检索其值。
+
+> `Counter` does not raise `KeyError` for unknown items. If a value has not been seen in the input (as with `e` in this example), its count is `0`.
+
+`Counter` 不会为未知项目引发 `KeyError`。如果在输入中没有看到某个值（如本例中的 `e`），则其计数为0。
+
+```python
+# 2_19_collections_counter_get_values.py
+import collections
+
+c = collections.Counter('abcdaab')
+
+for letter in 'abcde':
+    print('{} : {}'.format(letter, c[letter]))
+
+```
+
+```text
+a : 3
+b : 2
+c : 1
+d : 1
+e : 0
+```
+
+> The `elements()` method returns an iterator that produces all of the items known to the `Counter`.
+
+elements()` 方法返回一个迭代器，该迭代器生成 `Counter` 已知的所有项目。
+
+> The order of elements is not guaranteed, and items with counts less than or equal to zero are not included.
+
+不保证元素的顺序，并且不包括计数小于或等于零的项目。
+
+```python
+# 2_20_collection_counter_elements.py
+import collections
+
+c = collections.Counter('extremely')
+c['z'] = 0
+print(c)
+print(list(c.elements()))
+```
+
+```text
+Counter({'e': 3, 'x': 1, 't': 1, 'r': 1, 'm': 1, 'l': 1, 'y': 1, 'z': 0})
+['e', 'e', 'e', 'x', 't', 'r', 'm', 'l', 'y']
+```
