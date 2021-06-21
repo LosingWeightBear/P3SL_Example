@@ -493,3 +493,245 @@ Using attribute: True
 > The `collections` module includes container data types beyond the built-in types `list`, `dict`, and `tuple`.
 
 `collections` 模块包括除内置类型 `list`、`dict` 和 `tuple` 之外的容器数据类型。
+
+### 2.2.1 ChainMap: Search Multiple Dictionaries
+
+> The `ChainMap` class manages a sequence of dictionaries, and searches through them in the order they appear to find values associated with keys. A `ChainMap` makes a good “context” container, since it can be treated as a stack for which changes happen as the stack grows, with these changes being discarded again as the stack shrinks.
+
+
+`ChainMap`类管理一系列字典，并按照它们出现的顺序搜索它们以找到与键关联的值。`ChainMap` 是一个很好的“上下文”容器，因为它可以被视为一个堆栈，随着堆栈的增长而发生变化，随着堆栈的缩小，这些变化再次被丢弃。
+
+#### 2.2.1.1 Accessing Values
+
+> The `ChainMap` supports the same API as a regular dictionary for accessing existing values.
+
+`ChainMap` 支持与常规字典相同的 API，用于访问现有值。
+
+> The child mappings are searched in the order they are passed to the constructor, so the value reported for the key `'c'` comes from the `a` dictionary.
+
+子映射按照它们传递给构造函数的顺序进行搜索，因此键`'c'`的值来自“a”字典。
+
+```python
+# 2_11_collections_chainmap_read.py
+import collections
+
+a = {'a': 'A', 'c': 'C'}
+
+b = {'b': 'B', 'c': 'D'}
+
+m = collections.ChainMap(a, b)
+
+print('Individual Values')
+print('a = {}'.format(m['a']))
+print('b = {}'.format(m['b']))
+print('c = {}'.format(m['c']))
+print()
+
+print('Keys = {}'.format(list(m.keys())))
+print('Values = {}'.format(list(m.values())))
+print()
+
+print('Items:')
+for k, v in m.items():
+    print('{} = {}'.format(k, v))
+print()
+
+print('"d" in m: {}'.format(('d' in m)))
+```
+
+```text
+Individual Values
+a = A
+b = B
+c = C
+
+Keys = ['b', 'c', 'a']  
+Values = ['B', 'C', 'A']
+
+Items:
+b = B
+c = C
+a = A
+
+"d" in m: False
+```
+
+#### 2.2.1.2 Reordering
+
+> The `ChainMap` stores the list of mappings over which it searches in a list in its `maps` attribute. This list is mutable, so it is possible to add new mappings directly or to change the order of the elements to control lookup and update behavior.
+
+`ChainMap` 存储它在其 `maps` 属性中的列表中搜索的映射列表。此列表是可变的，因此可以直接添加新映射或更改元素的顺序以控制查找和更新行为。
+
+> When the list of mappings is reversed, the value associated with `'c'` changes.
+
+当映射列表反转时，与“c”关联的值发生变化
+
+```python
+# 2_12_collections_chainmap_reorder.py
+import collections
+
+a = {'a': 'A', 'c': 'C'}
+b = {'b': 'B', 'c': 'D'}
+
+m = collections.ChainMap(a, b)
+
+print(m.maps)
+print('c = {}\n'.format(m['c']))
+
+# Reverse the list.
+m.maps = list(reversed(m.maps))
+
+print(m.maps)
+print('c = {}'.format(m['c']))
+```
+
+```text
+[{'a': 'A', 'c': 'C'}, {'b': 'B', 'c': 'D'}]
+c = C
+
+[{'b': 'B', 'c': 'D'}, {'a': 'A', 'c': 'C'}]
+c = D
+```
+
+#### 2.2.1.3 Updating Values
+
+> A `ChainMap` does not cache the values in the child mappings. Thus, if their contents are modified, the results are reflected when the `ChainMap` is accessed.
+
+`ChainMap` 不会缓存子映射中的值。因此，如果它们的内容被修改，则在访问 `ChainMap` 时会反映结果。
+
+> Changing the values associated with existing keys and adding new elements works the same
+way.
+
+更改与现有键关联的值和添加新元素的工作方式相同。
+
+```python
+# 2_13_collections_chainmap_update_behind.py
+import collections
+
+a = {'a': 'A', 'c': 'C'}
+b = {'b': 'B', 'c': 'D'}
+
+m = collections.ChainMap(a, b)
+print('Before: {}'.format(m['c']))
+a['c'] = 'E'
+print('After : {}'.format(m['c']))
+```
+
+```text
+Before: C
+After : E
+```
+
+
+> It is also possible to set values through the `ChainMap` directly, although only the first mapping in the chain is actually modified.
+
+也可以直接通过 `ChainMap` 设置值，尽管实际上只修改了链中的第一个映射。
+
+> When the new value is stored using m, the a mapping is updated.
+
+当使用`m`存储新值时，将更新`a`映射。
+
+```python
+# 2_14_collections_chainmap_update_directly.py
+import collections
+
+a = {'a': 'A', 'c': 'C'}
+b = {'b': 'B', 'c': 'D'}
+
+m = collections.ChainMap(a, b)
+print('Before:', m)
+m['c'] = 'E'
+print('After :', m)
+print('a:', a)
+```
+
+```text
+Before: ChainMap({'a': 'A', 'c': 'C'}, {'b': 'B', 'c': 'D'})
+After : ChainMap({'a': 'A', 'c': 'E'}, {'b': 'B', 'c': 'D'})
+a: {'a': 'A', 'c': 'E'}
+```
+
+
+> `ChainMap` provides a convenience method for creating a new instance with one extra mapping at the front of the `maps` list to make it easy to avoid modifying the existing underlying data structures.
+
+`ChainMap` 提供了一种方便的方法来创建一个新实例，在 `maps` 列表的前面有一个额外的映射，从而可以轻松避免修改现有的底层数据结构。
+
+
+> This stacking behavior is what makes it convenient to use `ChainMap` instances as template or application contexts. Specifically, it is easy to add or update values in one iteration, then discard the changes for the next iteration.
+
+这种堆叠行为使得将 `ChainMap` 实例用作模板或应用程序上下文变得很方便。具体来说，很容易在一次迭代中添加或更新值，然后在下一次迭代中丢弃更改。
+
+```python
+# 2_15_collections_chainmap_new_child.py
+import collections
+
+a = {'a': 'A', 'c': 'C'}
+b = {'b': 'B', 'c': 'D'}
+
+m1 = collections.ChainMap(a, b)
+m2 = m1.new_child()
+
+print('m1 before:', m1)
+print('m2 before:', m2)
+
+m2['c'] = 'E'
+
+print('m1 after:', m1)
+print('m2 after:', m2)
+```
+
+```text
+m1 before: ChainMap({'a': 'A', 'c': 'C'}, {'b': 'B', 'c': 'D'})
+m2 before: ChainMap({}, {'a': 'A', 'c': 'C'}, {'b': 'B', 'c': 'D'})
+m1 after: ChainMap({'a': 'A', 'c': 'C'}, {'b': 'B', 'c': 'D'})
+m2 after: ChainMap({'c': 'E'}, {'a': 'A', 'c': 'C'}, {'b': 'B', 'c': 'D'})
+```
+
+> For situations where the new context is known or built in advance, it is also possible to pass a mapping to `new_child()`.
+
+对于新上下文已知或预先构建的情况，也可以将映射传递给`new_child()`。
+
+
+```python
+# 2_16_collections_chainmap_new_child_explicit.py
+import collections
+
+a = {'a': 'A', 'c': 'C'}
+b = {'b': 'B', 'c': 'D'}
+c = {'c': 'E'}
+
+m1 = collections.ChainMap(a, b)
+# m2 = m1.new_child(c)
+m2 = collections.ChainMap(c, *m1.maps)
+
+print('m1["c"] = {}'.format(m1['c']))
+print('m2["c"] = {}'.format(m2['c']))
+```
+
+```text
+m1["c"] = C
+m2["c"] = E
+```
+
+
+### 2.2.2 Counter: Count Hashable Objects
+
+> A `Counter` is a container that keeps track of how many times equivalent values are added. It can be used to implement the same algorithms for which other languages commonly use bag or multiset data structures.
+
+`Counter` 是一个容器，用于跟踪添加了多少次等效值。它可用于实现其他语言通常使用包或多集数据结构的相同算法。
+
+#### 2.2.2.1 Initializing
+
+> `Counter` supports three forms of initialization. Its constructor can be called with a sequence of items, a dictionary containing keys and counts, or using keyword arguments that map string names to counts.
+
+`Counter` 支持三种初始化形式。可以使用一系列项目、包含键和计数的字典或使用将字符串名称映射到计数的关键字参数来调用它的构造函数。
+
+
+> The results of all three forms of initialization are the same.
+
+所有三种形式的初始化结果都是一样的。
+
+
+```python
+```
+
