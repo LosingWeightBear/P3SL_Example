@@ -825,3 +825,379 @@ print(list(c.elements()))
 Counter({'e': 3, 'x': 1, 't': 1, 'r': 1, 'm': 1, 'l': 1, 'y': 1, 'z': 0})
 ['e', 'e', 'e', 'x', 't', 'r', 'm', 'l', 'y']
 ```
+
+
+> Use `most_common()` to produce a sequence of the `n` most frequently encountered input values and their respective counts.
+
+使用 `most_common()` 来生成一个由 `n` 个最常遇到的输入值及其各自的计数组成的序列。
+
+> This example counts the letters appearing in all of the words in the system dictionary to produce a frequency distribution, then prints the three most common letters. Leaving out the argument to `most_common()` produces a list of all the items, in order of frequency.
+
+本示例统计系统词典中所有单词中出现的字母以生成频率分布, 然后打印三个最常见的字母。省略`most_common()`的参数会按频率顺序生成所有项目的列表。
+
+这个例子中的文件路径是linux系统。
+
+```python
+# 2_21_collections_counter_most_common.py
+import collections
+
+c = collections.Counter()
+with open('/usr/share/dict/words', 'rt') as f:
+    for line in f:
+        c.update(line.rstrip().lower())
+
+print('Most common:')
+for letter, count in c.most_common(3):
+    print('{}: {:>7}'.format(letter, count))
+```
+
+```text
+Most common:
+e: 235331
+i: 201032
+a: 199554
+```
+
+
+#### 2.2.2.3 Arithmetic
+
+> `Counter` instances support arithmetic and set operations for aggregating results. This example shows the standard operators for creating new `Counter` instances, but the in-place operators `+=`, `-=`, `&=`, and `|=` are also supported.
+
+`Counter` 实例支持用于聚合结果的算术和集合操作。此示例显示了用于创建新 `Counter` 实例的标准运算符，但也支持就地运算符 `+=`、`-=`、`&=` 和 `|=`。
+
+
+> Each time a new `Counter` is produced through an operation, any items with zero or negative counts are discarded. The count for `a` is the same in `c1` and `c2`, so subtraction leaves it at zero.
+
+每次通过操作产生一个新的“Counter”时，任何具有零或负计数的项目都将被丢弃。 `a` 的计数在 `c1` 和 `c2` 中相同，因此减法将其保留为零。
+
+```python
+# 2_22_collections_counter_arithmetic.py
+import collections
+
+c1 = collections.Counter(['a', 'b', 'c', 'a', 'b', 'b'])
+c2 = collections.Counter('alphabet')
+
+print('C1:', c1)
+print('C2:', c2)
+
+print('\nCombined counts:')
+print(c1 + c2)
+
+print('\nSubtraction:')
+print(c1 - c2)
+
+print('\nIntersection (taking positive minimums):')
+print(c1 & c2)
+
+print('\nUnion (taking maximums):')
+print(c1 | c2)
+```
+
+
+```text
+C1: Counter({'b': 3, 'a': 2, 'c': 1})
+C2: Counter({'a': 2, 'l': 1, 'p': 1, 'h': 1, 'b': 1, 'e': 1, 't': 1})    
+
+Combined counts:
+Counter({'a': 4, 'b': 4, 'c': 1, 'l': 1, 'p': 1, 'h': 1, 'e': 1, 't': 1})
+
+Subtraction:
+Counter({'b': 2, 'c': 1})
+
+Intersection (taking positive minimums):
+Counter({'a': 2, 'b': 1})
+
+Union (taking maximums):
+Counter({'b': 3, 'a': 2, 'c': 1, 'l': 1, 'p': 1, 'h': 1, 'e': 1, 't': 1})
+```
+
+
+### defaultdict: Missing Keys Return a Default Value
+
+> The standard dictionary includes the method `setdefault()` for retrieving a value and establishing a default if the value does not exist. By contrast, `defaultdict` lets the caller specify the default up front when the container is initialized.
+
+标准字典包含方法`setdefault()`，用于检索值并在该值不存在时建立默认值。相比之下，`defaultdict` 让调用者在容器初始化时预先指定默认值。
+
+> This method works well as long as it is appropriate for all keys to have the same default. It can be especially useful if the default is a type used for aggregating or accumulating values, such as a `list`, `set`, or even `int`. The standard library documentation includes several examples in which `defaultdict` is used in this way.
+
+```python
+# 2_23_collections_defaultdict.py
+import collections
+
+
+def default_factory():
+    return 'default value'
+
+    
+d = collections.defaultdict(default_factory, foo='bar')
+print('d:', d)
+print('foo =>', d['foo'])
+print('bar =>', d['bar'])
+```
+
+```text
+d: defaultdict(<function default_factory at 0x000001C86BCA0DC0>, {'foo': 'bar'})
+foo => bar
+bar => default value
+```
+
+
+### 2.2.4 deque: Double-Ended Queue
+
+> A double-ended queue, or `deque`, supports adding and removing elements from either end of the queue. The more commonly used stacks and queues are degenerate forms of deques, where the inputs and outputs are restricted to a single end.
+
+双端队列或`deque`，支持从队列的任一端添加和删除元素。更常用的堆栈和队列是双端队列的退化形式，其中输入和输出仅限于单端。
+
+
+> Since deques are a type of sequence container, they support some of the same operations as list, such as examining the contents with `__getitem__()`, determining length, and removing elements from the middle of the queue by matching identity.
+
+由于双端队列是一种序列容器，它们支持一些与列表相同的操作，例如使用`__getitem__()`检查内容、确定长度以及通过匹配标识从队列中间删除元素。
+
+
+```python
+# 2_24_collections_deque.py
+import collections
+
+d = collections.deque('abcdefg')
+print('Deque:', d)
+print('Length:', len(d))
+print('Left end:', d[0])
+print('Right end:', d[-1])
+
+d.remove('c')
+print('remove(c):', d)
+```
+
+```text
+Deque: deque(['a', 'b', 'c', 'd', 'e', 'f', 'g'])
+Length: 7
+Left end: a
+Right end: g
+remove(c): deque(['a', 'b', 'd', 'e', 'f', 'g'])
+```
+
+
+#### 2.2.4.1 Populating
+
+> A deque can be populated from either end, termed “left” and “right” in the Python implementation.
+
+双端队列可以从任一端填充，在 Python 实现中称为“左”和“右”。
+
+> The `extendleft()` function iterates over its input and performs the equivalent of an `appendleft()` for each item. The end result is that the `deque` contains the input sequence in reverse order.
+
+`extendleft()` 函数对其输入进行迭代，并为每个项目执行与 `appendleft()` 等效的操作。最终结果是 `deque` 以相反的顺序包含输入序列。
+
+
+```python
+# 2_25_collections_deque_populating.py
+import collections
+
+# Add to the right.
+d1 = collections.deque()
+d1.extend('abcdefg')
+print('extend :', d1)
+d1.append('h')
+print('append :', d1)
+
+# Add to the left.
+d2 = collections.deque()
+d2.extendleft(range(6))
+print('extendleft:', d2)
+d2.appendleft(6)
+print('appendleft:', d2)
+```
+
+
+```text
+extend : deque(['a', 'b', 'c', 'd', 'e', 'f', 'g'])
+append : deque(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
+extendleft: deque([5, 4, 3, 2, 1, 0])
+appendleft: deque([6, 5, 4, 3, 2, 1, 0])
+```
+
+
+#### 2.2.4.2 Consuming
+
+> Similarly, the elements of the deque can be consumed from both ends or either end, depending on the algorithm being applied.
+
+类似地，可以从两端或任一端消耗双端队列的元素，具体取决于所应用的算法。
+
+> Use `pop()` to remove an item from the “right” end of the deque and `popleft()` to take an item from the “left” end.
+
+使用`pop()`从双端队列的“右”端删除一个项目，使用`popleft()`从“左”端获取一个项目。
+
+```python
+# 2_26_collections_deque_consuming.py
+import collections
+
+print('From the right:')
+d = collections.deque('abcdefg')
+while True:
+    try:
+        print(d.pop(), end='')
+    except IndexError:
+        break
+print
+
+print('\nFrom the left:')
+d = collections.deque(range(6))
+while True:
+    try:
+        print(d.popleft(), end='')
+    except IndexError:
+        break
+print
+```
+
+```text
+From the right:
+gfedcba
+From the left:
+012345
+```
+
+[^_^]: 这里是注释
+
+
+> Since deques are thread-safe, the contents can even be consumed from both ends at the same time from separate threads.
+
+由于双端队列是线程安全的，因此甚至可以从不同的线程同时从两端消耗内容。
+
+
+> The threads in this example alternate between each end, removing items until the deque is empty.
+
+此示例中的线程在每一端之间交替，删除项直到双端队列为空。
+
+```python
+# 2_27_collections_deque_both_ends.py
+import collections
+import threading
+import time
+
+candle = collections.deque(range(5))
+
+
+def burn(direction, nextSource):
+    while True:
+        try:
+            next = nextSource()
+        except IndexError:
+            break
+        else:
+            print('{:>8}: {}'.format(direction, next))
+            time.sleep(0.1)
+    print('{:>8} done'.format(direction))
+    return
+
+left = threading.Thread(target=burn, args=('Left', candle.popleft))
+right = threading.Thread(target=burn, args=('Right', candle.pop))
+
+left.start()
+right.start()
+
+left.join()
+right.join()
+```
+
+```text
+  Left: 0
+   Right: 4
+    Left: 1
+   Right: 3
+    Left: 2
+   Right done
+    Left done
+```
+
+
+#### 2.2.4.3 Rotating
+
+> Another useful aspect of the `deque` is the ability to rotate it in either direction, so as to skip over some items.
+
+`deque` 的另一个有用方面是能够在任一方向旋转它，以便跳过某些项。
+
+> Rotating the `deque` to the right (using a positive rotation) takes items from the right end and moves them to the left end. Rotating to the left (with a negative value) takes items from the left end and moves them to the right end. It may help to visualize the items in the deque as being engraved along the edge of a dial.
+
+将 `deque` 向右旋转（使用正旋转）从右端获取项目并将它们移动到左端。向左旋转（使用负值）从左端获取项目并将它们移动到右端。将`deque`中的项想象为沿表盘边缘雕刻可能会有所帮助。
+
+```python
+# 2_28_collections_deque_rotate.py
+import collections
+
+d = collections.deque(range(10))
+print('Normal :', d)
+
+d = collections.deque(range(10))
+d.rotate(2)
+print('Right rotation:', d)
+
+d = collections.deque(range(10))
+d.rotate(-2)
+print('Left rotation :', d)
+```
+
+
+```text
+Normal : deque([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+Right rotation: deque([8, 9, 0, 1, 2, 3, 4, 5, 6, 7])
+Left rotation : deque([2, 3, 4, 5, 6, 7, 8, 9, 0, 1])
+```
+
+
+
+#### 2.2.4.4 Constraining the Queue Size
+
+> A `deque` instance can be configured with a maximum length so that it never grows beyond that size. When the queue reaches the specified length, existing items are discarded as new items are added. This behavior is useful for finding the last `n` items in a stream of undetermined length.
+
+双端队列实例可以配置为最大长度，以便它永远不会超过该大小。当队列达到指定长度时，随着新项目的添加，现有项目将被丢弃。此行为对于在不确定长度的流中查找最后`n`个项很有用。
+
+> The deque length is maintained regardless of which end the items are added to.
+
+无论项添加到哪一端，双端队列长度都会保持不变。
+
+```python
+# 2_29_collections_deque_maxlen.py
+import collections
+import random
+
+# Set the random seed so we see the same output each time
+# the script is run.
+random.seed(1)
+
+d1 = collections.deque(maxlen=3)
+d2 = collections.deque(maxlen=3)
+
+for i in range(5):
+    n = random.randint(0, 100)
+    print('n =', n)
+    d1.append(n)
+    d2.appendleft(n)
+    print('D1:', d1)
+    print('D2:', d2)
+```
+
+```text
+n = 17
+D1: deque([17], maxlen=3)
+D2: deque([17], maxlen=3)
+n = 72
+D1: deque([17, 72], maxlen=3)
+D2: deque([72, 17], maxlen=3)
+n = 97
+D1: deque([17, 72, 97], maxlen=3)
+D2: deque([97, 72, 17], maxlen=3)
+n = 8
+D1: deque([72, 97, 8], maxlen=3)
+D2: deque([8, 97, 72], maxlen=3)
+n = 32
+D1: deque([97, 8, 32], maxlen=3)
+D2: deque([32, 8, 97], maxlen=3)
+```
+
+
+### 2.2.5 namedtuple: Tuple Subclass with Named Fields
+
+> The standard `tuple` uses numerical indexes to access its members.
+
+标准的`tuple`使用数字索引来访问其成员。
+

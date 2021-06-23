@@ -2,6 +2,8 @@
     "cSpell.words": [
         "chainmap",
         "collections",
+        "defaultdict",
+        "deque",
         "read"
     ]
 }
