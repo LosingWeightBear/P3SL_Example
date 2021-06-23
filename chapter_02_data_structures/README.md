@@ -1201,3 +1201,140 @@ D2: deque([32, 8, 97], maxlen=3)
 
 标准的`tuple`使用数字索引来访问其成员。
 
+> This makes tuples convenient containers for simple uses.
+
+这使得元组成为简单使用的方便容器。
+
+```python
+# 2_30_collections_tuple.py
+bob = ('Bob', 30, 'male')
+print('Representation:', bob)
+
+jane = ('Jane', 29, 'female')
+print('\nField by index:', jane[0])
+
+print('\nFields by index:')
+for p in [bob, jane]:
+    print('{} is a {} year old {}'.format(*p))
+```
+
+```text
+Representation: ('Bob', 30, 'male')
+
+Field by index: Jane
+
+Fields by index:
+Bob is a 30 year old male
+Jane is a 29 year old female
+```
+
+
+> In contrast, remembering which index should be used for each value can lead to errors, especially if the `tuple` has a lot of fields and is constructed far from where it is used. A `namedtuple` assigns names, as well as the numerical index, to each member.
+
+相比之下，记住每个值应该使用哪个索引可能会导致错误，特别是如果 `tuple` 有很多字段并且构造远离它的使用位置。`namedtuple` 为每个成员分配名称以及数字索引。
+
+
+#### 2.2.5.1 Defining
+
+> `namedtuple` instances are just as memory efficient as regular tuples because they do not have per-instance dictionaries. Each kind of `namedtuple` is represented by its own class, which is created by using the `namedtuple()` factory function. The arguments are the name of the new class and a string containing the names of the elements.
+
+`namedtuple` 实例与常规元组一样具有内存效率，因为它们没有每个实例的字典。每种`namedtuple` 都由它自己的类表示，该类是使用`namedtuple()` 工厂函数创建的。参数是新类的名称和包含元素名称的字符串。
+
+
+> As the example illustrates, it is possible to access the fields of the `namedtuple` by name using dotted notation (`obj.attr`) as well as by using the positional indexes of standard tuples.
+
+如示例所示，可以使用点符号 (`obj.attr`) 以及使用标准元组的位置索引按名称访问 `namedtuple` 的字段。
+
+```python
+# 2_31_collections_namedtuple_person.py
+import collections
+
+Person = collections.namedtuple('Person', 'name age')
+
+bob = Person(name='Bob', age=30)
+print('\nRepresentation:', bob)
+
+jane = Person(name='Jane', age=29)
+print('\nField by name:', jane.name)
+
+print('\nFields by index:')
+for p in [bob, jane]:
+    print('{} is {} years old'.format(*p))
+```
+
+```text
+
+Representation: Person(name='Bob', age=30)
+
+Field by name: Jane
+
+Fields by index:
+Bob is 30 years old
+Jane is 29 years old
+```
+
+
+> Just like a regular `tuple`, a `namedtuple` is immutable. This restriction allows `tuple` instances to have a consistent hash value, which makes it possible to use them as keys in dictionaries and to be included in sets.
+
+就像常规的`tuple`一样，`namedtuple`是不可变的。此限制允许 `tuple` 实例具有一致的哈希值，这使得可以将它们用作字典中的键并包含在集合中。
+
+> Trying to change a value through its named attribute results in an `AttributeError`.
+
+尝试通过其命名属性更改值会导致 `AttributeError`
+
+```python
+# 2_32_collections_namedtuple_immutable.py
+import collections
+
+Person = collections.namedtuple('Person', 'name age')
+
+pat = Person(name='Pat', age=12)
+print('\nRepresentation:', pat)
+
+pat.age = 21
+```
+
+```text
+
+Representation: Person(name='Pat', age=12)
+Traceback (most recent call last):
+  File "c:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_02_data_structures\section_22_collections\2_32_collections_namedtuple_immutable.py", line 8, in <module>
+    pat.age = 21
+AttributeError: can't set attribute
+```
+
+#### 2.2.5.2 Invalid Field Names
+
+> Field names are invalid if they are repeated or conflict with Python keywords.
+
+如果字段名称重复或与 Python 关键字冲突，则字段名称无效。
+
+> As the field names are parsed, invalid values cause `ValueError` exceptions.
+
+解析字段名称时，无效值会导致 `ValueError` 异常。
+
+```python
+# 2_33_collections_namedtuple_bad_fields.py
+import collections
+
+try:
+    collections.namedtuple('Person', 'name class age')
+except ValueError as err:
+    print(err)
+
+try:
+    collections.namedtuple('Person', 'name age age')
+except ValueError as err:
+    print(err)
+```
+
+```text
+Type names and field names cannot be a keyword: 'class'
+Encountered duplicate field name: 'age'
+```
+
+> In situations where a `namedtuple` is created based on values outside the control of the program (such as to represent the rows returned by a database query, where the schema is not known in advance), the `rename` option should be set to `True` so the invalid fields are renamed.
+
+在基于程序控制之外的值创建`namedtuple` 的情况下（例如表示数据库查询返回的行，其中模式事先未知），`rename` 选项应设置为`True` 所以无效的字段被重命名。
+
+
