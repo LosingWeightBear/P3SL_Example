@@ -1335,6 +1335,312 @@ Encountered duplicate field name: 'age'
 
 > In situations where a `namedtuple` is created based on values outside the control of the program (such as to represent the rows returned by a database query, where the schema is not known in advance), the `rename` option should be set to `True` so the invalid fields are renamed.
 
-在基于程序控制之外的值创建`namedtuple` 的情况下（例如表示数据库查询返回的行，其中模式事先未知），`rename` 选项应设置为`True` 所以无效的字段被重命名。
+在基于程序控制之外的值创建`namedtuple` 的情况下（例如表示数据库查询返回的行，其中模式事先未知），`rename` 选项应设置为`True`,所以无效的字段被重命名。
+
+> The new names for renamed fields depend on their index in the tuple, so the field with name `class` becomes `_1` and the duplicate `age` field is changed to `_2`.
+
+重命名字段的新名称取决于它们在元组中的索引，因此名称为 `class` 的字段变为 `_1`，重复的 `age` 字段更改为 `_2`。
 
 
+```python
+import collections
+
+with_class = collections.namedtuple('Person', 'name class age', rename=True)
+print(with_class._fields)
+
+two_ages = collections.namedtuple('Person', 'name age age', rename=True)
+print(two_ages._fields)
+```
+
+```text
+('name', '_1', 'age')
+('name', 'age', '_2')
+```
+
+
+#### 2.2.5.3 Special Attributes
+
+> `namedtuple` provides several useful attributes and methods for working with subclasses and instances. All of these built-in properties have names prefixed with an underscore (`_`), which by convention in most Python programs indicates a private attribute. For `namedtuple`, however, the prefix is intended to protect the name from collision with user-provided attribute names.
+
+> The names of the fields passed to `namedtuple` to define the new class are saved in the `_fields` attribute.
+
+`namedtuple` 提供了几个有用的属性和方法来处理子类和实例。所有这些内置属性的名称都以下划线 (`_`) 为前缀，按照惯例，在大多数 Python 程序中，下划线表示私有属性。然而，对于`namedtuple`，前缀旨在保护名称免于与用户提供的属性名称冲突。
+
+传递给`namedtuple` 以定义新类的字段名称保存在`_fields` 属性中。
+
+> Although the argument is a single space-separated string, the stored value is the sequence of individual names.
+
+尽管参数是单个空格分隔的字符串，但存储的值是单个名称的序列。
+
+```python
+# 2_35_collections_namedtuple_fields.py
+import collections
+
+Person = collections.namedtuple('Person', 'name age')
+bob = Person(name='Bob', age=30)
+print('Representation:', bob)
+print('Fields:', bob._fields)
+```
+
+```text
+Representation: Person(name='Bob', age=30)
+Fields: ('name', 'age')
+```
+
+> `namedtuple` instances can be converted to `OrderedDict` instances using `_asdict()`.
+
+`namedtuple` 实例可以使用 `_asdict()` 转换为 `OrderedDict` 实例。
+
+> The keys of the `OrderedDict` are in the same order as the fields for the `namedtuple`.
+
+`OrderedDict` 的键与 `namedtuple` 的字段顺序相同。
+
+
+```python
+# 2_36_collections_namedtuple_asdict.py
+import collections
+
+Person = collections.namedtuple('Person', 'name age')
+
+bob = Person(name='Bob', age=30)
+print('Representation:', bob)
+print('As Dictionary:', bob._asdict())
+```
+
+```text
+Representation: Person(name='Bob', age=30)
+As Dictionary: {'name': 'Bob', 'age': 30}
+```
+
+
+> The `_replace()` method builds a new instance, replacing the values of some fields in the process.
+
+`_replace()` 方法构建一个新实例，替换进程中某些字段的值。
+
+> Although the name implies it is modifying the existing object, because `namedtuple` instances are immutable the method actually returns a new object.
+
+尽管名称暗示它正在修改现有对象，但因为`namedtuple` 实例是不可变的，该方法实际上返回一个新对象。
+
+```python
+# 2_37_collections_namedtuple_replace.py
+import collections
+
+Person = collections.namedtuple('Person', 'name age')
+bob = Person(name='Bob', age=30)
+print('\nBefore:', bob)
+bob2 = bob._replace(name='Robert')
+print('After:', bob2)
+print('Same?:', bob is bob2)
+```
+
+```text
+
+Before: Person(name='Bob', age=30)
+After: Person(name='Robert', age=30)
+Same?: False
+```
+
+### 2.2.6 OrderedDict: Remember the Order Keys Are Added to a Dictionary
+
+> An `OrderedDict` is a dictionary subclass that remembers the order in which its contents are added.
+
+`OrderedDict` 是一个字典子类，它记住其内容添加的顺序。
+
+> A regular `dict` does not track the insertion order, and iterating over it produces the values in order based on how the keys are stored in the hash table, which is in turn influenced by a random value to reduce collisions. In an `OrderedDict`, by contrast, the order in which the items are inserted is remembered and used when creating an iterator.
+
+常规的`dict`不跟踪插入顺序，并且根据键在哈希表中的存储方式对其进行迭代，从而按顺序生成值，而哈希表又受随机值的影响以减少冲突。相比之下，在`OrderedDict`中，插入项的顺序会在创建迭代器时被记住和使用。
+
+
+```python
+# 2_38_collections_ordereddict_iter.py
+import collections
+
+print('Regular dictionary:')
+d = {}
+d['a'] = 'A'
+d['b'] = 'B'
+d['c'] = 'C'
+
+for k, v in d.items():
+    print(k, v)
+
+print('\nOrderedDict:')
+d = collections.OrderedDict()
+d['a'] = 'A'
+d['b'] = 'B'
+d['c'] = 'C'
+
+for k, v in d.items():
+    print(k, v)
+```
+
+[^_^]: 这个案例并没有看出区别啊！！！
+
+```text
+Regular dictionary:
+a A
+b B
+c C
+
+OrderedDict:
+a A
+b B
+c C
+```
+
+
+#### 2.2.6.1 Equality
+
+> A regular `dict` looks at its contents when testing for equality. An `OrderedDict` also considers the order in which the items were added.
+
+常规的“dict”在测试相等性时会查看其内容。 `OrderedDict` 还考虑了添加项目的顺序。
+
+> In this case, since the two ordered dictionaries are created from values in a different order, they are considered to be different.
+
+这个案例显示，由于两个有序字典是根据不同顺序的值创建的，因此它们被认为是不同的。
+
+```python
+# 2_39_collections_ordereddict_equality.py
+import collections
+
+print('dict       :', end=' ')
+d1 = {}
+d1['a'] = 'A'
+d1['b'] = 'B'
+d1['c'] = 'C'
+
+d2 = {}
+d2['c'] = 'C'
+d2['b'] = 'B'
+d2['a'] = 'A'
+
+print(d1 == d2)
+
+print('OrderedDict:', end=' ')
+
+d1 = collections.OrderedDict()
+d1['a'] = 'A'
+d1['b'] = 'B'
+d1['c'] = 'C'
+
+d2 = collections.OrderedDict()
+d2['c'] = 'C'
+d2['b'] = 'B'
+d2['a'] = 'A'
+
+print(d1 == d2)
+```
+
+```text
+dict       : True
+OrderedDict: False
+```
+
+#### 2.2.6.2 Reordering
+
+> It is possible to change the order of the keys in an `OrderedDict` by moving them to either the beginning or the end of the sequence using `move_to_end()`.
+
+可以通过使用 `move_to_end()` 将它们移动到序列的开头或结尾来更改 `OrderedDict` 中键的顺序。
+
+> The last argument tells `move_to_end()` whether to move the item to be the last item in the key sequence (when `True`) or the first (when `False`).
+
+后一个参数告诉 `move_to_end()` 是将项移动到键序列中的最后一项（当 `True` 时）还是第一个（当 `False` 时）。
+
+```python
+# 2_40_collections_ordereddict_move_to_end.py
+import collections
+
+d = collections.OrderedDict(
+    [('a', 'A'), ('b', 'B'), ('c', 'C')]
+)
+
+print('Before:')
+for k, v in d.items():
+    print(k, v)
+
+d.move_to_end('b')
+
+print('\nmove_to_end():')
+for k, v in d.items():
+    print(k, v)
+
+d.move_to_end('b', last=False)
+
+print('\nmove_to_end(last=False):')
+for k, v in d.items():
+    print(k, v)
+```
+
+```text
+Before:
+a A
+b B
+c C
+
+move_to_end():
+a A
+c C
+b B
+
+move_to_end(last=False):
+b B
+a A
+c C
+```
+
+
+### 2.2.7 collections.abc: Abstract Base Classes for Containers
+
+> The `collections.abc` module contains abstract base classes that define the APIs for container data structures built into Python and provided by the `collections` module. Refer to Table 2.1 for a list of the classes and their purposes.
+
+`collections.abc` 模块包含抽象基类，这些类定义了 Python 内置并由 `collections` 模块提供的容器数据结构的 API。有关类别及其用途的列表，请参阅表 2.1。
+
+
+> In addition to clearly defining the APIs for containers with different semantics, these abstract base classes can be used to test whether an object supports an API before invoking it using `isinstance()`. Some of the classes also provide implementations of methods, and they can be used as mix-ins to build up custom container types without implementing every method from scratch.
+
+除了为不同语义的容器明确定义 API 外，这些抽象基类还可用于在使用 isinstance() 调用对象之前测试对象是否支持 API。一些类还提供方法的实现，它们可以用作混合来构建自定义容器类型，而无需从头开始实现每个方法。
+
+
+||||
+|--|--|--|
+||||
+
+## 2.3 array: Sequence of Fixed-Type Data
+
+> The `array` module defines a sequence data structure that looks very much like a `list`, except that all of the members have to be of the same primitive type. The types supported are all numeric or other fixed-size primitive types such as bytes.
+
+`array` 模块定义了一个看起来非常像 `list` 的序列数据结构，除了所有成员必须是相同的原始类型。支持的类型都是数字或其他固定大小的原始类型，例如字节。
+
+> Refer to Table 2.2 for some of the supported types. The standard library documentation for `array` includes a complete list of type codes.
+
+有关一些支持的类型，请参阅表 2.2。 `array` 的标准库文档包括完整的类型代码列表。
+
+
+### 2.3.1 Initialization
+
+> An `array` is instantiated with an argument describing the type of data to be allowed, and possibly an initial sequence of data to store in the array.
+
+`array` 使用描述允许的数据类型的参数进行实例化，并且可能是要存储在数组中的初始数据序列。
+
+> In this example, the array is configured to hold a sequence of bytes and is initialized with a simple byte string.
+
+在这个例子中，数组被配置为保存一个字节序列并用一个简单的字节字符串初始化。
+
+```python
+# 2_41_array_string.pys
+import array
+import binascii
+
+s = b'This is the array.'
+a = array.array('b', s)
+
+print('As byte string:', s)
+print('As array      :', a)
+print('As hex        :', binascii.hexlify(a))
+```
+
+```text
+As byte string: b'This is the array.'
+As array      : array('b', [84, 104, 105, 115, 32, 105, 115, 32, 116, 104, 101, 32, 97, 114, 114, 97, 121, 46])
+As hex        : b'54686973206973207468652061727261792e'
+```
