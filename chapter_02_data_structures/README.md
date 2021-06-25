@@ -1644,3 +1644,184 @@ As byte string: b'This is the array.'
 As array      : array('b', [84, 104, 105, 115, 32, 105, 115, 32, 116, 104, 101, 32, 97, 114, 114, 97, 121, 46])
 As hex        : b'54686973206973207468652061727261792e'
 ```
+
+
+### 2.3.2 Manipulating Arrays
+
+> An `array` can be extended and otherwise manipulated in the same ways as other Python sequences.
+
+`array` 可以以与其他 Python 序列相同的方式进行扩展和操作。
+
+> The supported operations include slicing, iterating, and adding elements to the end.
+
+支持的操作包括切片、迭代和添加元素到最后。
+
+```python
+# 2_42_array_sequence.py
+import array
+import pprint
+
+a = array.array('i', range(3))
+print('Initial :', a)
+
+a.extend(range(3))
+print('Extended:', a)
+
+print('Slice :', a[2:5])
+
+print('Iterator:')
+print(list(enumerate(a)))
+```
+
+```text
+Initial : array('i', [0, 1, 2])
+Extended: array('i', [0, 1, 2, 0, 1, 2])
+Slice   : array('i', [2, 0, 1])
+Iterator:
+[(0, 0), (1, 1), (2, 2), (3, 0), (4, 1), (5, 2)]
+```
+
+### 2.3.3 Arrays and Files
+
+> The contents of an array can be written to and read from files using built-in methods coded efficiently for that purpose.
+
+可以使用内置方法将数组的内容写入文件和从文件中读取，为此提高编码效率。
+
+> This example illustrates reading the data “raw,” meaning directly from the binary file, versus reading it into a new array and converting the bytes to the appropriate types.
+
+此示例说明了读取“原始”数据，即直接从二进制文件中读取数据，而不是将其读取到新数组中并将字节转换为适当的类型。
+
+[^_^]: 这里要注意，原书中的示例代码在Win10下，会报`PermissionError: [Errno 13] Permission denied`,用这种方式创建的临时文件，在linux系统里不关闭文件即可再次打开读取内容，但是在windows系统，不关闭就没有权限再次打开。另外，文件默认的是，一旦关闭，就会被自动清除。所以这里就有了一个矛盾：不关闭文件就没有打开的权限；关闭之后文件就删除了，更无法打开。要解决这个问题，我们需要三个关键步骤：（1）修改NamedTemporaryFile的delete参数，让文件关闭后不会自动清理。（2）读取之前，先关闭。（3）最后“手动”清理这个临时文件。
+
+```python
+# 2_43_array_file.py
+import array
+import binascii
+import tempfile
+import os
+
+a = array.array('i', range(5))
+print('A1:', a)
+
+# Write the array of numbers to a temporary file.
+# for Windows close the tmp file before open it again
+output = tempfile.NamedTemporaryFile(delete=False) # for windows set delelte as False
+a.tofile(output.file) # Must pass an *actual* file
+output.flush()
+output.close() # close the tmp file
+
+# Read the raw data.
+with open(output.name, 'rb') as input:
+    raw_data = input.read()
+    print('Raw Contents:', binascii.hexlify(raw_data))
+
+    # Read the data into an array.
+    input.seek(0)
+    a2 = array.array('i')
+    a2.fromfile(input, len(a))
+    print('A2:', a2)
+
+
+os.remove(output.name) # delete the tmp file
+```
+
+```text
+A1: array('i', [0, 1, 2, 3, 4])
+Raw Contents: b'0000000001000000020000000300000004000000'
+A2: array('i', [0, 1, 2, 3, 4])
+```
+
+
+> `tofile()` uses `tobytes()` to format the data, and `fromfile()` uses `frombytes()` to convert it back to an array instance.
+
+`tofile()` 使用 `tobytes()` 来格式化数据，`fromfile()` 使用 `frombytes()` 将其转换回数组实例。
+
+> Both `tobytes()` and `frombytes()` work on byte strings, not Unicode strings.
+
+tobytes()` 和 `frombytes()` 都适用于字节字符串，而不是 Unicode 字符串。
+
+
+```python
+# 2_44_array_tobytes.py
+import array
+import binascii
+
+a = array.array('i', range(5))
+print('A1:', a)
+
+as_bytes = a.tobytes()
+print('Bytes:', binascii.hexlify(as_bytes))
+
+a2 = array.array('i')
+a2.frombytes(as_bytes)
+print('A2:', a2)
+```
+
+```text
+A1: array('i', [0, 1, 2, 3, 4])
+Bytes: b'0000000001000000020000000300000004000000'
+A2: array('i', [0, 1, 2, 3, 4])
+```
+
+
+### 2.3.4 Alternative Byte Ordering
+
+> If the data in the array is not in the native byte order, or if the data needs to be swapped before being sent to a system with a different byte order (or over the network), it is possible to convert the entire array without iterating over the elements from Python.
+
+如果数组中的数据不是本机字节顺序，或者如果数据在发送到具有不同字节顺序的系统（或通过网络）之前需要交换，则可以在不迭代的情况下转换整个数组在 Python 中的元素。
+
+> The `byteswap()` method switches the byte order of the items in the array from within C, so it is much more efficient than looping over the data in Python.
+
+`byteswap()` 方法从 C 中切换数组中项目的字节顺序，因此它比在 Python 中循环数据要高效得多。
+
+
+```python
+# 2_45_array_byteswap.py
+import array
+import binascii
+
+
+def to_hex(a):
+    chars_per_item = a.itemsize * 2 # 2 hex digits
+    hex_version = binascii.hexlify(a)
+    num_chunks = len(hex_version) // chars_per_item
+    for i in range(num_chunks):
+        start = i * chars_per_item
+        end = start + chars_per_item
+        yield hex_version[start:end]
+
+    
+start = int('0x12345678', 16)
+end = start + 5
+a1 = array.array('i', range(start, end))
+a2 = array.array('i', range(start, end))
+a2.byteswap()
+
+fmt = '{:>12} {:>12} {:>12} {:>12}'
+print(fmt.format('A1 hex', 'A1', 'A2 hex', 'A2'))
+print(fmt.format('-' * 12, '-' * 12, '-' * 12, '-' * 12))
+fmt = '{!r:>12} {:12} {!r:>12} {:12}'
+for values in zip(to_hex(a1), a1, to_hex(a2), a2):
+    print(fmt.format(*values))
+```
+
+```text
+      A1 hex           A1       A2 hex           A2
+------------ ------------ ------------ ------------
+ b'78563412'    305419896  b'12345678'   2018915346
+ b'79563412'    305419897  b'12345679'   2035692562
+ b'7a563412'    305419898  b'1234567a'   2052469778
+ b'7b563412'    305419899  b'1234567b'   2069246994
+ b'7c563412'    305419900  b'1234567c'   2086024210
+```
+
+
+## 2.4 heapq: Heap Sort Algorithm
+
+> A heap is a tree-like data structure in which the child nodes have a sort-order relationship with the parents. Binary heaps can be represented using a list or array organized so that the children of element N are at positions 2*N+1 and 2*N+2 (for zero-based indexes). This layout makes it possible to rearrange heaps in place, so it is not necessary to reallocate as much memory when adding or removing items. 
+
+堆是一种树状数据结构，其中子节点与父节点具有排序关系。二元堆可以使用一个列表或数组来表示，这样组织起来，元素 N 的子元素位于 2*N+1 和 2*N+2 位置（对于从零开始的索引）。这种布局可以就地重新排列堆，因此在添加或删除项目时不需要重新分配尽可能多的内存。
+
+> A max-heap ensures that the parent is larger than or equal to both of its children. A min-heap requires that the parent be less than or equal to its children. Python’s `heapq` module implements a min-heap.
+
+最大堆确保父级大于或等于其两个子级。最小堆要求父级小于或等于其子级。Python 的 `heapq` 模块实现了一个最小堆
