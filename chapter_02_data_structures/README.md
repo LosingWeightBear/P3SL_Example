@@ -1824,4 +1824,53 @@ for values in zip(to_hex(a1), a1, to_hex(a2), a2):
 
 > A max-heap ensures that the parent is larger than or equal to both of its children. A min-heap requires that the parent be less than or equal to its children. Python’s `heapq` module implements a min-heap.
 
-最大堆确保父级大于或等于其两个子级。最小堆要求父级小于或等于其子级。Python 的 `heapq` 模块实现了一个最小堆
+最大堆确保父级大于或等于其两个子级。最小堆要求父级小于或等于其子级。Python 的 `heapq` 模块实现了一个最小堆。
+
+
+### 2.4.1 Example Data
+
+> The examples in this section use the data in `heapq_heapdata.py`.
+
+本节中的示例使用了 `heapq_heapdata.py` 中的数据。
+
+
+
+```python
+# This data was generated with the random module.
+data = [19, 9, 4, 10, 11]
+```
+
+
+> The heap output is printed using `heapq_showtree.py`.
+
+堆输出使用 `heapq_showtree.py` 打印。
+
+```python
+import math
+from io import StringIO
+
+
+def show_tree(tree, total_width=36, fill=' '):
+    """Pretty-print a tree."""
+    output = StringIO()
+    last_row = -1
+    for i, n in enumerate(tree):
+        if i:
+            row = int(math.floor(math.log(i + 1, 2)))
+        else:
+            row = 0
+        if row != last_row:
+            output.write('\n')
+        columns = 2 ** row
+        col_width = int(math.floor(total_width / columns))
+        output.write(str(n).center(col_width, fill))
+        last_row = row
+    print(output.getvalue())
+    print('-' * total_width)
+    print()
+```
+
+
+### 2.4.2 Creating a Heap
+
+> There are two basic ways to create a heap: `heappush()` and `heapify()`.
