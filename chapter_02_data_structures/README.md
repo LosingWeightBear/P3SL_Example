@@ -1874,3 +1874,202 @@ def show_tree(tree, total_width=36, fill=' '):
 ### 2.4.2 Creating a Heap
 
 > There are two basic ways to create a heap: `heappush()` and `heapify()`.
+
+有两种基本的方法来创建堆：`heappush()` 和 `heapify()`。
+
+
+> When `heappush()` is used, the heap sort order of the elements is maintained as new items are added from a data source.
+
+当使用 `heappush()` 时，元素的堆排序顺序会在从数据源添加新项目时保持不变。
+
+```python
+# 2_48_heapq_heappush.py
+import heapq
+from heapq_showtree import show_tree
+from heapq_heapdata import data
+
+heap = []
+print('random :', data)
+print()
+
+for n in data:
+    print('add {:>3}:'.format(n))
+    heapq.heappush(heap, n)
+    show_tree(heap)
+```
+
+```text
+random : [19, 9, 4, 10, 11]
+
+add  19:
+
+                 19
+------------------------------------
+
+add   9:
+
+                 9
+        19
+------------------------------------
+
+add   4:
+
+                 4
+        19                9
+------------------------------------
+
+add  10:
+
+                 4
+        10                9
+    19
+------------------------------------
+
+add  11:
+
+                 4
+        10                9
+    19       11
+------------------------------------
+```
+
+
+> If the data is already in memory, it is more efficient to use `heapify()` to rearrange the items of the list in place.
+
+如果数据已经在内存中，使用 `heapify()` 来重新安排列表的项目会更有效。
+
+> The result of building a list in heap order one item at a time is the same as building an unordered list and then calling `heapify()`.
+
+以堆顺序构建一个列表一次一个项目的结果与构建一个无序列表然后调用`heapify()`的结果相同。
+
+```python
+# 2_49_heapq_heapify.py
+import heapq
+from heapq_showtree import show_tree
+from heapq_heapdata import data
+
+print('random :', data)
+heapq.heapify(data)
+print('heapified :')
+show_tree(data)
+```
+
+
+```text
+random : [19, 9, 4, 10, 11]
+heapified :
+
+                 4
+        9                 19
+    10       11
+------------------------------------
+```
+
+
+### 2.4.3 Accessing the Contents of a Heap
+
+> Once the heap is organized correctly, use `heappop()` to remove the element with the lowest value.
+
+一旦堆被正确组织，使用`heappop()`删除具有最低值的元素。
+
+
+> In this example, adapted from the standard library documentation, `heapify()` and `heappop()` are used to sort a list of numbers.
+
+在这个例子中，改编自标准库文档，`heapify()` 和 `heappop()` 用于对数字列表进行排序。
+
+
+```python
+# 2_50_heapq_heappop.py
+import heapq
+from heapq_showtree import show_tree
+from heapq_heapdata import data
+
+print('random :', data)
+heapq.heapify(data)
+
+print('heapified :')
+show_tree(data)
+print
+
+for i in range(2):
+    smallest = heapq.heappop(data)
+    print('pop {:>3}:'.format(smallest))
+    show_tree(data)
+```
+
+```text
+random : [19, 9, 4, 10, 11]
+heapified :
+
+                 4
+        9                 19
+    10       11
+------------------------------------
+
+pop   4:
+
+                 9
+        10                19
+    11
+------------------------------------
+
+pop   9:
+
+                 10
+        11                19
+------------------------------------
+```
+
+
+> To remove existing elements and replace them with new values in a single operation, use `heapreplace()`.
+
+要在单个操作中删除现有元素并用新值替换它们，请使用 `heapreplace()`。
+
+> Replacing elements in place makes it possible to maintain a fixed-size heap, such as a queue of jobs ordered by priority.
+
+就地替换元素可以维护固定大小的堆，例如按优先级排序的作业队列。
+
+```python
+# 2_51_heapq_heapreplace.py
+import heapq
+from heapq_showtree import show_tree
+from heapq_heapdata import data
+
+heapq.heapify(data)
+print('start:')
+show_tree(data)
+
+for n in [0, 13]:
+    smallest = heapq.heapreplace(data, n)
+    print('replace {:>2} with {:>2}:'.format(smallest, n))
+    show_tree(data)
+```
+
+
+```text
+start:
+
+                 4
+        9                 19
+    10       11
+------------------------------------
+
+replace  4 with  0:
+
+                 0
+        9                 19
+    10       11
+------------------------------------
+
+replace  0 with 13:
+
+                 9
+        10                19
+    13       11
+------------------------------------
+```
+
+
+### 2.4.4 Data Extremes from a Heap
+
+
