@@ -2073,3 +2073,186 @@ replace  0 with 13:
 ### 2.4.4 Data Extremes from a Heap
 
 
+> `heapq` also includes two functions to examine an iterable and find a range of the largest or smallest values it contains.
+
+`heapq` 还包括两个函数来检查迭代并找到它包含的最大值或最小值的范围。
+
+> Using `nlargest()` and `nsmallest()` is efficient only for relatively small values of `n > 1`, but can still come in handy in a few cases.
+
+使用 `nlargest()` 和 `nsmallest()` 仅对相对较小的 `n > 1` 值有效，但在少数情况下仍然可以派上用场。
+
+```python
+# 2_52_heapq_extremes.py
+import heapq
+from heapq_heapdata import data
+
+print('all :', data)
+print('3 largest :', heapq.nlargest(3, data))
+print('from sort :', list(reversed(sorted(data)[-3:])))
+print('3 smallest:', heapq.nsmallest(3, data))
+print('from sort :', sorted(data)[:3])
+```
+
+```text
+all : [19, 9, 4, 10, 11]
+3 largest : [19, 11, 10]
+from sort : [19, 11, 10]
+3 smallest: [4, 9, 10]
+from sort : [4, 9, 10]
+```
+
+
+### 2.4.5 Efficiently Merging Sorted Sequences
+
+> Combining several sorted sequences into one new sequence is easy for small data sets.
+
+对于小数据集，将几个排序的序列组合成一个新序列很容易。
+
+> `list(sorted(itertools.chain(*data)))`
+
+> For larger data sets, this technique can use a considerable amount of memory. Instead of sorting the entire combined sequence, `merge()` uses a heap to generate a new sequence one item at a time, determining the next item using a fixed amount of memory.
+
+对于较大的数据集，此技术可能会使用大量内存。`merge()` 不是对整个组合序列进行排序，而是使用堆来一次生成一个新序列,使用固定数量的内存来确定下一个项目。
+
+> Because the implementation of `merge()` uses a heap, it consumes memory based on the number of sequences being merged, rather than the number of items in those sequences.
+
+因为 `merge()` 的实现使用堆，它根据被合并的序列数量消耗内存，而不是这些序列中的项目数量。
+
+```python
+# 2_53_heapq_merge.py
+import heapq
+import random
+
+random.seed(2016)
+
+data = []
+for i in range(4):
+    new_data = list(random.sample(range(1, 101), 5))
+    new_data.sort()
+    data.append(new_data)
+
+for i, d in enumerate(data):
+    print('{}: {}'.format(i, d))
+
+print('\nMerged:')
+for i in heapq.merge(*data):
+    print(i, end=' ')
+print()
+```
+
+```text
+0: [33, 58, 71, 88, 95]
+1: [10, 11, 17, 38, 91]
+2: [13, 18, 39, 61, 63]
+3: [20, 27, 31, 42, 45]
+
+Merged:
+10 11 13 17 18 20 27 31 33 38 39 42 45 58 61 63 71 88 91 95
+```
+
+
+## 2.5 bisect: Maintain Lists in Sorted Order
+
+> The `bisect` module implements an algorithm for inserting elements into a list while maintaining the list in sorted order.
+
+`bisect` 模块实现了一种算法，用于将元素插入到列表中，同时保持列表的排序顺序。
+
+### 2.5.1 Inserting in Sorted Order
+
+> Here is a simple example in which `insort()` is used to insert items into a list in sorted order.
+
+这是一个简单的示例，其中使用 `insort()` 将项目按排序顺序插入到列表中。
+
+> The first column of the output shows the new random number. The second column shows the position where the number will be inserted into the list. The remainder of each line is the current sorted list.
+
+输出的第一列显示新的随机数。第二列显示将数字插入列表的位置。每行的其余部分是当前的排序列表。
+
+```python
+# 2_54_bisect_example.py
+import bisect
+
+# A series of random numbers
+values = [14, 85, 77, 26, 50, 45, 66, 79, 10, 3, 84, 77, 1]
+
+print('New Pos Contents')
+print('--- --- --------')
+
+l = []
+for i in values:
+    position = bisect.bisect(l, i)
+    bisect.insort(l, i)
+    print('{:3} {:3}'.format(i, position), l)
+```
+
+
+```text
+New Pos Contents
+--- --- --------
+ 14   0 [14]
+ 85   1 [14, 85]
+ 77   1 [14, 77, 85]
+ 26   1 [14, 26, 77, 85]
+ 50   2 [14, 26, 50, 77, 85]
+ 45   2 [14, 26, 45, 50, 77, 85]
+ 66   4 [14, 26, 45, 50, 66, 77, 85]
+ 79   6 [14, 26, 45, 50, 66, 77, 79, 85]
+ 10   0 [10, 14, 26, 45, 50, 66, 77, 79, 85]
+  3   0 [3, 10, 14, 26, 45, 50, 66, 77, 79, 85]
+ 84   9 [3, 10, 14, 26, 45, 50, 66, 77, 79, 84, 85]
+ 77   8 [3, 10, 14, 26, 45, 50, 66, 77, 77, 79, 84, 85]
+  1   0 [1, 3, 10, 14, 26, 45, 50, 66, 77, 77, 79, 84, 85]
+```
+
+
+> This is a simple example. In fact, given the amount of data being manipulated, it might be faster to simply build the list and then sort it once. By contrast, for long lists, significant time and memory savings can be achieved using an insertion sort algorithm such as this, especially when the operation to compare two members of the list requires expensive computation.
+
+这是一个简单的例子。事实上，考虑到要处理的数据量，简单地构建列表然后对它进行一次排序可能会更快。相比之下，对于长列表，使用诸如此类的插入排序算法可以实现显着的时间和内存节省，特别是当比较列表的两个成员的操作需要昂贵的计算时。
+
+
+### 2.5.2 Handling Duplicates
+
+> The result set shown previously includes a repeated value, `77`. The `bisect` module provides two ways to handle repeats: New values can be inserted either to the left of existing values, or to the right. The `insort()` function is actually an alias for `insort_right()`, which inserts an item after the existing value. The corresponding function `insort_left()` inserts an item before the existing value.
+
+前面显示的结果集包含一个重复值`77`。`bisect` 模块提供了两种处理重复的方法：新值可以插入到现有值的左侧，也可以插入到右侧。`insort()` 函数实际上是 `insort_right()` 的别名，它在现有值之后插入一个项目。相应的函数 `insort_left()` 在现有值之前插入一个项目。
+
+
+```python
+# 2_55_bisect_example2.py
+import bisect
+
+# A series of random numbers
+values = [14, 85, 77, 26, 50, 45, 66, 79, 10, 3, 84, 77, 1]
+
+print('New Pos Contents')
+print('--- --- --------')
+# Use bisect_left and insort_left.
+
+l = []
+for i in values:
+    position = bisect.bisect_left(l, i)
+    bisect.insort_left(l, i)
+    print('{:3} {:3}'.format(i, position), l)
+```
+
+```text
+New Pos Contents
+--- --- --------
+ 14   0 [14]
+ 85   1 [14, 85]
+ 77   1 [14, 77, 85]
+ 26   1 [14, 26, 77, 85]
+ 50   2 [14, 26, 50, 77, 85]
+ 45   2 [14, 26, 45, 50, 77, 85]
+ 66   4 [14, 26, 45, 50, 66, 77, 85]
+ 79   6 [14, 26, 45, 50, 66, 77, 79, 85]
+ 10   0 [10, 14, 26, 45, 50, 66, 77, 79, 85]
+  3   0 [3, 10, 14, 26, 45, 50, 66, 77, 79, 85]
+ 84   9 [3, 10, 14, 26, 45, 50, 66, 77, 79, 84, 85]
+ 77   7 [3, 10, 14, 26, 45, 50, 66, 77, 77, 79, 84, 85]
+  1   0 [1, 3, 10, 14, 26, 45, 50, 66, 77, 77, 79, 84, 85]
+```
+
+
+> When the same data is manipulated using `bisect_left()` and `insort_left()`, the results are the same sorted list but the insert positions are different for the duplicate values.
+
+当使用 `bisect_left()` 和 `insort_left()` 处理相同的数据时，结果是相同的排序列表，但重复值的插入位置不同。
