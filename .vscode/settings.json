@@ -5,5 +5,6 @@
         "defaultdict",
         "deque",
         "read"
-    ]
+    ],
+    "python.pythonPath": "C:\\Users\\ABCX1C\\AppData\\Local\\Programs\\Python\\Python38\\python.exe"
 }

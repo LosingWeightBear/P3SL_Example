@@ -2256,3 +2256,276 @@ New Pos Contents
 > When the same data is manipulated using `bisect_left()` and `insort_left()`, the results are the same sorted list but the insert positions are different for the duplicate values.
 
 当使用 `bisect_left()` 和 `insort_left()` 处理相同的数据时，结果是相同的排序列表，但重复值的插入位置不同。
+
+
+## 2.6 queue: Thread-Safe FIFO Implementation
+
+> The `queue` module provides a first-in, first-out (FIFO) data structure suitable for multithreaded programming. It can be used to pass messages or other data between producer and consumer threads safely. Locking is handled for the caller, so many threads can work with the same `Queue` instance safely and easily. The size of a `Queue` (the number of elements it contains) may be restricted to throttle memory usage or processing.
+
+`queue` 模块提供了适合多线程编程的先进先出 (FIFO) 数据结构。它可用于在生产者和消费者线程之间安全地传递消息或其他数据。锁定是为调用者处理的，因此许多线程可以安全轻松地使用同一个 `Queue` 实例。`Queue` 的大小（它包含的元素数量）可能会受到限制内存使用或处理的限制。
+
+
+### 2.6.1 Basic FIFO Queue
+
+> The `Queue` class implements a basic first-in, first-out container. Elements are added to one “end” of the sequence using `put()`, and removed from the other end using `get()`.
+
+`Queue` 类实现了一个基本的先进先出容器。使用`put()`将元素添加到序列的一端，并使用`get()`从另一端删除元素。
+
+> This example uses a single thread to illustrate that elements are removed from the queue in the same order in which they are inserted.
+
+此示例使用单个线程来说明元素从队列中删除的顺序与它们插入的顺序相同。
+
+```python
+# 2_56_queue_fifo.py
+import queue
+
+q = queue.Queue()
+
+for i in range(5):
+    q.put(i)
+
+while not q.empty():
+    print(q.get(), end=' ')
+print()
+```
+
+```text
+0 1 2 3 4
+```
+
+
+### 2.6.2 LIFO Queue
+
+> In contrast to the standard FIFO implementation of Queue, the `LifoQueue` uses last-in, first-out ordering (normally associated with a stack data structure).
+
+与 Queue 的标准 FIFO 实现相反，“LifoQueue”使用后进先出排序（通常与堆栈数据结构相关联）。
+
+> The item most recently `put` into the queue is removed by `get`.
+
+最近被“放入”队列的项目被“获取”删除。
+
+```python
+# 2_57_queue_lifo.py
+import queue
+
+q = queue.Queue()
+
+for i in range(5):
+    q.put(i)
+
+while not q.empty():
+    print(q.get(), end=' ')
+print()
+```
+
+```text
+4 3 2 1 0 
+```
+
+
+### 2.6.3 Priority Queue
+
+> Sometimes the processing order of the items in a queue needs to be based on characteristics of those items, rather than just the order they are created or added to the queue. For example, print jobs from the payroll department may take precedence over a code listing that a developer wants to print. `PriorityQueue` uses the sort order of the contents of the queue to decide which item to retrieve.
+
+有时，队列中项目的处理顺序需要基于这些项目的特征，而不仅仅是它们被创建或添加到队列中的顺序。例如，来自工资部门的打印作业可能优先于开发人员想要打印的代码列表。 `PriorityQueue` 使用队列内容的排序顺序来决定要检索的项目。
+
+> This example has multiple threads consuming the jobs, which are processed based on the priority of items in the queue at the time `get()` was called. The order of processing for items added to the queue while the consumer threads are running depends on thread context switching.
+
+此示例有多个线程使用作业，这些作业根据调用`get()`时队列中项目的优先级进行处理。消费者线程运行时添加到队列的项目的处理顺序取决于线程上下文切换。
+
+```python
+# 2_58_queeu_priority.py
+import functools
+import queue
+import threading
+
+
+@functools.total_ordering
+class Job:
+
+    def __init__(self, priority, description):
+        self.priority = priority
+        self.description = description
+        print('New job:', description)
+        return
+
+    def __eq__(self, other):
+        try:
+            return self.priority == other.priority
+        except AttributeError:
+            return NotImplemented
+
+    def __lt__(self, other):
+        try:
+            return self.priority < other.priority
+        except AttributeError:
+            return NotImplemented
+
+
+q = queue.PriorityQueue()
+
+q.put(Job(3, 'Mid-level job'))
+q.put(Job(10, 'Low-level job'))
+q.put(Job(1, 'Important job'))
+
+
+def process_job(q):
+    while True:
+        next_job = q.get()
+        print('Processing job:', next_job.description)
+        q.task_done()
+
+
+workers = [
+    threading.Thread(target=process_job, args=(q,)),
+    threading.Thread(target=process_job, args=(q,)),
+]
+for w in workers:
+    w.setDaemon(True)
+    w.start()
+
+q.join()
+```
+
+```text
+New job: Mid-level job
+New job: Low-level job
+New job: Important job
+Processing job: Important job
+Processing job: Mid-level job
+Processing job: Low-level job
+```
+
+
+### 2.6.4 Building a Threaded Podcast Client
+
+> The source code for the podcasting client in this section demonstrates how to use the `Queue` class with multiple threads. The program reads one or more `RSS` feeds, queues up the enclosures for the five most recent episodes from each feed to be downloaded, and processes several downloads in parallel using threads. It does not have enough error handling for production use, but the skeleton implementation illustrates the use of the `queue` module.
+
+本节中播客客户端的源代码演示了如何在多线程中使用 `Queue` 类。该程序读取一个或多个“RSS”提要，将要下载的每个提要中最近五集的附件排队，并使用线程并行处理多个下载。它没有足够的错误处理以供生产使用，但框架实现说明了 `queue` 模块的使用。
+
+> First, some operating parameters are established. Usually, these would come from user inputs (e.g., preferences or a database). The example uses hard-coded values for the number of threads and list of URLs to fetch.
+
+首先，建立一些操作参数。通常，这些将来自用户输入（例如，偏好或数据库）。该示例使用硬编码值作为要获取的线程数和 URL 列表。
+
+> The function `download_enclosures()` runs in the worker thread and processes the downloads using `urllib`.
+
+函数`download_enclosures()`在工作线程中运行并使用`urllib`处理下载。
+
+
+> Once the target function for the threads is defined, the worker threads can be started. When `download_enclosures()` processes the statement `url = q.get()`, it blocks and waits until the queue has something to return. That means it is safe to start the threads before there is anything in the queue.
+
+一旦定义了线程的目标函数，就可以启动工作线程。当`download_enclosures()` 处理语句`url = q.get()` 时，它会阻塞并等待队列有东西要返回。这意味着在队列中有任何东西之前启动线程是安全的。
+
+
+> The next step is to retrieve the feed contents using the `feedparser` module and enqueue the URLs of the enclosures. As soon as the first URL is added to the queue, one of the worker threads picks it up and starts downloading it. The loop continues to add items until the feed is exhausted, and the worker threads take turns dequeuing URLs to download them.
+
+下一步是使用 `feedparser` 模块检索提要内容并将附件的 URL 加入队列。一旦第一个 URL 被添加到队列中，一个工作线程就会选择它并开始下载它。循环继续添加项目，直到提要耗尽，工作线程轮流将 URL 出列以下载它们。
+
+
+> The only thing left to do is wait for the queue to empty out again, using `join()`.
+
+唯一剩下要做的就是等待队列再次清空，使用`join()`。
+
+```python
+# 2_59_fetch_podcasts.py
+from queue import Queue
+import threading
+import time
+import urllib
+from urllib.parse import urlparse
+
+import feedparser
+
+# Set up some global variables.
+num_fetch_threads = 2
+enclosure_queue = Queue()
+
+# A real app wouldn't use hard-coded data.
+feed_urls = [
+    'http://talkpython.fm/episodes/rss',
+]
+
+def message(s):
+    print('{}: {}'.format(threading.current_thread().name, s))
+
+
+
+def download_enclosures(q):
+    """This is the worker thread function.
+    It processes items in the queue one after
+    another. These daemon threads go into an
+    infinite loop, and exit only when
+    the main thread ends.
+    """
+    while True:
+        message('looking for the next enclosure')
+        url = q.get()
+        filename = url.rpartition('/')[-1]
+        message('downloading {}'.format(filename))
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        # Save the downloaded file to the current directory.
+        message('writing to {}'.format(filename))
+        with open(filename, 'wb') as outfile:
+            outfile.write(data)
+        q.task_done()
+
+
+# Set up some threads to fetch the enclosures.
+for i in range(num_fetch_threads):
+    worker = threading.Thread(
+        target=download_enclosures,
+        args=(enclosure_queue,),
+        name='worker-{}'.format(i),
+    )
+    worker.setDaemon(True)
+    worker.start()
+
+
+
+# Download the feed(s) and put the enclosure URLs into
+# the queue.
+for url in feed_urls:
+    response = feedparser.parse(url, agent='fetch_podcasts.py')
+    for entry in response['entries'][:5]:
+        for enclosure in entry.get('enclosures', []):
+            parsed_url = urlparse(enclosure['url'])
+            message('queuing {}'.format(
+                parsed_url.path.rpartition('/')[-1]))
+            enclosure_queue.put(enclosure['url'])
+
+
+# Now wait for the queue to be empty, indicating that we have
+# processed all of the downloads.
+message('*** main thread waiting')
+enclosure_queue.join()
+message('*** done')
+```
+
+
+```text
+worker-0: looking for the next enclosure
+worker-1: looking for the next enclosure
+MainThread: queuing a-path-into-data-science.mp3
+MainThread: queuing htmx-clean-dynamic-html-pages.mp3
+worker-0: downloading a-path-into-data-science.mp3
+worker-1: downloading htmx-clean-dynamic-html-pages.mp3
+MainThread: queuing python-in-the-electrical-energy-sector.mp3
+MainThread: queuing typosquatting-and-supply-chains-vulnerabilities.mp3
+MainThread: queuing measuring-your-ml-impact-with-codecarbon.mp3
+MainThread: *** main thread waiting
+worker-0: writing to a-path-into-data-science.mp3
+worker-0: looking for the next enclosure
+worker-0: downloading python-in-the-electrical-energy-sector.mp3
+worker-0: writing to python-in-the-electrical-energy-sector.mp3
+worker-0: looking for the next enclosure
+worker-0: downloading typosquatting-and-supply-chains-vulnerabilities.mp3
+worker-0: writing to typosquatting-and-supply-chains-vulnerabilities.mp3
+worker-0: looking for the next enclosure
+worker-0: downloading measuring-your-ml-impact-with-codecarbon.mp3
+worker-1: writing to htmx-clean-dynamic-html-pages.mp3
+worker-1: looking for the next enclosure
+worker-0: writing to measuring-your-ml-impact-with-codecarbon.mp3
+worker-0: looking for the next enclosure
+MainThread: *** done
+```
