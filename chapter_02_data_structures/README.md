@@ -2529,3 +2529,259 @@ worker-0: writing to measuring-your-ml-impact-with-codecarbon.mp3
 worker-0: looking for the next enclosure
 MainThread: *** done
 ```
+
+## 2.7 struct: Binary Data Structures
+
+> The `struct` module includes functions for converting between strings of bytes and native Python data types such as numbers and strings.
+
+`struct` 模块包括用于在字节字符串和本机 Python 数据类型（如数字和字符串）之间进行转换的函数。
+
+### 2.7.1 Functions Versus Struct Class
+
+> A set of module-level functions is available for working with structured values, as well as the `Struct` class. Format specifiers are converted from their string format to a compiled representation, similar to the way regular expressions are handled. The conversion takes some resources, so it is typically more efficient to do it once when creating a `Struct` instance and call methods on the instance instead of using the module-level functions. All of the following examples use the `Struct` class.
+
+
+一组模块级函数可用于处理结构化值以及 `Struct` 类。格式说明符从其字符串格式转换为已编译的表示形式，类似于处理正则表达式的方式。转换需要一些资源，因此在创建 `Struct` 实例并在实例上调用方法而不是使用模块级函数时，执行一次通常更有效。以下所有示例都使用 Struct 类。
+
+
+### 2.7.2 Packing and Unpacking
+
+> Structs support packing data into strings, and unpacking data from strings using format specifiers made up of characters representing the type of the data and optional count and endianness indicators. Refer to the standard library documentation for a complete list of the supported format specifiers.
+
+结构支持将数据打包成字符串，并使用格式说明符从字符串中解压缩数据，格式说明符由表示数据类型的字符和可选的计数和字节序指示符组成。有关支持的格式说明符的完整列表，请参阅标准库文档。
+
+> In this example, the specifier calls for an integer or long integer value, a two-byte string, and a floating-point number. The spaces in the format specifier are included to separate the type indicators, and are ignored when the format is compiled.
+
+在此示例中，说明符调用整数或长整数值、两字节字符串和浮点数。格式说明符中的空格用于分隔类型指示符，并在编译格式时被忽略。
+
+> The example converts the packed value to a sequence of hex bytes for printing with `binascii.hexlify()`, since some of the characters are nulls.
+
+该示例将打包值转换为十六进制字节序列，以便使用 `binascii.hexlify()` 进行打印，因为某些字符是空值。
+
+```python
+# 2_60_struct_pack.py
+import struct
+import binascii
+
+values = (1, 'ab'.encode('utf-8'), 2.7)
+s = struct.Struct('I 2s f')
+packed_data = s.pack(*values)
+
+print('Original values:', values)
+print('Format string  :', s.format)
+print('Uses           :', s.size, 'bytes')
+print('Packed Value   :', binascii.hexlify(packed_data))
+```
+
+```text
+Original values: (1, b'ab', 2.7)
+Format string  : I 2s f
+Uses           : 12 bytes
+Packed Value   : b'0100000061620000cdcc2c40'
+```
+
+> Use `unpack()` to extract data from its packed representation.
+
+使用 `unpack()` 从其打包表示中提取数据。
+
+> Passing the packed value to `unpack()`, gives basically the same values back (note the discrepancy in the floating point value).
+
+
+将打包值传递给 `unpack()`，返回基本相同的值（注意浮点值的差异）。
+
+```python
+# 2_61_struct_unpack.py
+import struct
+import binascii
+
+packed_data = binascii.unhexlify(b'0100000061620000cdcc2c40')
+
+s = struct.Struct('I 2s f')
+unpacked_data = s.unpack(packed_data)
+print('Unpacked Values:', unpacked_data)
+```
+
+```text
+Unpacked Values: (1, b'ab', 2.700000047683716)
+```
+
+
+### 2.7.3 Endianness
+
+字节序
+
+> By default, values are encoded using the native C library notion of endianness. It is easy to override that choice by providing an explicit endianness directive in the format string.
+
+默认情况下，值使用本机 C 库的字节序概念进行编码。通过在格式字符串中提供显式字节序指令，很容易覆盖该选择。
+
+```python
+# 2_62_struct_endianness.py
+import struct
+import binascii
+
+values = (1, 'ab'.encode('utf-8'), 2.7)
+print('Original values:', values)
+
+endianness = [
+    ('@', 'native, native'),
+    ('=', 'native, standard'),
+    ('<', 'little-endian'),
+    ('>', 'big-endian'),
+    ('!', 'network'),
+]
+
+for code, name in endianness:
+    s = struct.Struct(code + ' I 2s f')
+    packed_data = s.pack(*values)
+    print()
+    print('Format string :', s.format, 'for', name)
+    print('Uses :', s.size, 'bytes')
+    print('Packed Value :', binascii.hexlify(packed_data))
+    print('Unpacked Value :', s.unpack(packed_data))
+```
+
+```text
+Original values: (1, b'ab', 2.7)
+
+Format string : @ I 2s f for native, native
+Uses : 12 bytes
+Packed Value : b'0100000061620000cdcc2c40'
+Unpacked Value : (1, b'ab', 2.700000047683716)
+
+Format string : = I 2s f for native, standard
+Uses : 10 bytes
+Packed Value : b'010000006162cdcc2c40'
+Unpacked Value : (1, b'ab', 2.700000047683716)
+
+Format string : < I 2s f for little-endian
+Uses : 10 bytes
+Packed Value : b'010000006162cdcc2c40'
+Unpacked Value : (1, b'ab', 2.700000047683716)
+
+Format string : > I 2s f for big-endian
+Uses : 10 bytes
+Packed Value : b'000000016162402ccccd'
+Unpacked Value : (1, b'ab', 2.700000047683716)
+
+Format string : ! I 2s f for network
+Uses : 10 bytes
+Packed Value : b'000000016162402ccccd'
+Unpacked Value : (1, b'ab', 2.700000047683716)
+```
+
+
+> Table 2.3 lists the byte order specifiers used by `Struct`.
+
+|Code|Meaning|
+| :----: |----|
+|`@`|Native order|
+|`=`|Native standard|
+|`<`|Little-endian|
+|`>`|Big-endian|
+|`!`|Network order|
+
+
+### 2.7.4 Buffers
+
+> Working with binary packed data is typically reserved for performance-sensitive situations or passing data into and out of extension modules. These cases can be optimized by avoiding the overhead of allocating a new buffer for each packed structure. The `pack_into()` and `unpack_from()` methods support writing to pre-allocated buffers directly.
+
+使用二进制打包数据通常保留用于性能敏感的情况或将数据传入和传出扩展模块。可以通过避免为每个打包结构分配新缓冲区的开销来优化这些情况。`pack_into()` 和 `unpack_from()` 方法支持直接写入预先分配的缓冲区。
+
+> The `size` attribute of the `Struct` tells us how big the buffer needs to be.
+
+`Struct` 的 `size` 属性告诉我们缓冲区需要多大。
+
+```python
+# 2_63_struct_buffers.py
+import array
+import binascii
+import ctypes
+import struct
+
+s = struct.Struct('I 2s f')
+values = (1, 'ab'.encode('utf-8'), 2.7)
+print('Original:', values)
+
+print()
+print('ctypes string buffer')
+
+b = ctypes.create_string_buffer(s.size)
+print('Before :', binascii.hexlify(b.raw))
+s.pack_into(b, 0, *values)
+print('After :', binascii.hexlify(b.raw))
+print('Unpacked:', s.unpack_from(b, 0))
+
+print()
+print('array')
+
+a = array.array('b', b'\0' * s.size)
+print('Before :', binascii.hexlify(a))
+s.pack_into(a, 0, *values)
+print('After :', binascii.hexlify(a))
+print('Unpacked:', s.unpack_from(a, 0))
+```
+
+
+```text
+Original: (1, b'ab', 2.7)
+
+ctypes string buffer
+Before : b'000000000000000000000000'
+After : b'0100000061620000cdcc2c40'
+Unpacked: (1, b'ab', 2.700000047683716)
+
+array
+Before : b'000000000000000000000000'
+After : b'0100000061620000cdcc2c40'
+Unpacked: (1, b'ab', 2.700000047683716)
+```
+
+
+## 2.8 weakref: Impermanent References to Objects
+
+> The `weakref` module supports weak references to objects. A normal reference increments the reference count on the object and prevents it from being garbage collected. This outcome is not always desirable, especially when a circular reference might be present or when a cache of objects should be deleted when memory is needed. A weak reference is a handle to an object that does not keep it from being cleaned up automatically.
+
+`weakref` 模块支持对对象的弱引用。普通引用会增加对象的引用计数并防止它被垃圾收集。这种结果并不总是可取的，尤其是当可能存在循环引用或需要内存时应删除对象缓存时。弱引用是一个对象的句柄，它不会阻止它被自动清理。
+
+
+### 2.8.1 References
+
+> Weak references to objects are managed through the `ref` class. To retrieve the original object, call the reference object.
+
+对对象的弱引用通过 `ref` 类进行管理。要检索原始对象，请调用引用对象
+
+> In this case, since `obj` is deleted before the second call to the reference, the `ref` returns `None`.
+
+在这种情况下，由于在第二次调用引用之前删除了 `obj`，所以 `ref` 返回 `None`。
+
+```python
+# 2_64_weakref_ref.py
+import weakref
+
+
+class ExpensiveObject:
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+
+obj = ExpensiveObject()
+r = weakref.ref(obj)
+
+print('obj:', obj)
+print('ref:', r)
+print('r():', r())
+
+print('deleting obj')
+del obj
+print('r():', r())
+```
+
+```text
+obj: <__main__.ExpensiveObject object at 0x000001C334A82FD0>
+ref: <weakref at 0x000001C334A7E900; to 'ExpensiveObject' at 0x000001C334A82FD0>
+r(): <__main__.ExpensiveObject object at 0x000001C334A82FD0>
+deleting obj
+(Deleting <__main__.ExpensiveObject object at 0x000001C334A82FD0>)
+r(): None
+```
