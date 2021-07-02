@@ -2785,3 +2785,219 @@ deleting obj
 (Deleting <__main__.ExpensiveObject object at 0x000001C334A82FD0>)
 r(): None
 ```
+
+
+### 2.8.2 Reference Callbacks
+
+> The `ref` constructor accepts an optional callback function that is invoked when the referenced object is deleted.
+
+`ref` 构造函数接受一个可选的回调函数，当引用的对象被删除时调用该函数。
+
+> The callback receives the reference object as an argument after the reference is “dead” and no longer refers to the original object. One use for this feature is to remove the weak reference object from a cache.
+
+在引用是“废弃”并且不再引用原始对象后，回调接收引用对象作为参数。此功能的一个用途是从缓存中删除弱引用对象。
+
+```python
+# 2_65_weakref_ref_callback.py
+import weakref
+
+
+class ExpensiveObject:
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+
+def callback(reference):
+    """Invoked when referenced object is deleted"""
+    print('callback({!r})'.format(reference))
+
+
+obj = ExpensiveObject()
+r = weakref.ref(obj, callback)
+
+print('obj:', obj)
+print('ref:', r)
+print('r():', r())
+
+print('deleting obj')
+del obj
+print('r():', r())
+```
+
+```text
+obj: <__main__.ExpensiveObject object at 0x000001AFA6901FD0>
+ref: <weakref at 0x000001AFA68FF900; to 'ExpensiveObject' at 0x000001AFA6901FD0>
+r(): <__main__.ExpensiveObject object at 0x000001AFA6901FD0>
+deleting obj
+(Deleting <__main__.ExpensiveObject object at 0x000001AFA6901FD0>)
+callback(<weakref at 0x000001AFA68FF900; dead>)
+r(): None
+```
+
+
+### 2.8.3 Finalizing Objects
+
+> For more robust management of resources when weak references are cleaned up, use `finalize` to associate callbacks with objects. A `finalize` instance is retained until the attached object is deleted, even if the application does not retain a reference to the finalizer.
+
+为了在清除弱引用时对资源进行更健壮的管理，请使用 `finalize` 将回调与对象相关联。`finalize`实例会一直保留到附加的对象被删除，即使应用程序没有保留对终结器的引用。
+
+
+> The arguments to `finalize` are the object to track, a callable to invoke when the object is garbage collected, and any positional or named arguments to pass to the callable.
+
+`finalize`的参数是要跟踪的对象、对象被垃圾回收时要调用的可调用对象，以及要传递给可调用对象的任何位置或命名参数。
+
+```python
+# 2_66_weakref_finalize.py
+import weakref
+
+
+class ExpensiveObject:
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+
+def on_finalize(*args):
+    print('on_finalize({!r})'.format(args))
+
+
+obj = ExpensiveObject()
+weakref.finalize(obj, on_finalize, 'extra argument')
+
+del obj
+```
+
+```text
+(Deleting <__main__.ExpensiveObject object at 0x00000169CBE21FD0>)
+on_finalize(('extra argument',))
+```
+
+
+> The `finalize` instance has a writable property `atexit` to control whether the callback is invoked as a program is exiting, if it hasn’t already been called.
+
+`finalize` 实例有一个可写属性 `atexit` 来控制回调是否在程序退出时被调用，如果它还没有被调用。
+
+> The default is to invoke the callback. Setting `atexit` to false disables that behavior.
+
+默认是调用回调。将 `atexit` 设置为 false 会禁用该行为。
+
+```python
+# 2_67_weakref_finalize_atexit.py
+import sys
+import weakref
+
+
+class ExpensiveObject:
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+
+def on_finalize(*args):
+    print('on_finalize({!r})'.format(args))
+
+
+obj = ExpensiveObject()
+f = weakref.finalize(obj, on_finalize, 'extra argument')
+f.atexit = bool(int(sys.argv[1]))
+```
+
+[^-^]: 这个运行结果与作者给出有出入！
+
+```text
+Traceback (most recent call last):
+  File "c:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_02_data_structures\section_28_weakref\2_67_weakref_finalize_atexit.py", line 17, in <module>
+    f.atexit = bool(int(sys.argv[1]))
+IndexError: list index out of range
+on_finalize(('extra argument',))
+(Deleting <__main__.ExpensiveObject object at 0x0000020939CB1FD0>)
+```
+
+> Giving the `finalize` instance a reference to the object it tracks causes a reference to be retained, so the object is never garbage collected.
+
+给 `finalize` 实例一个对它跟踪的对象的引用会导致一个引用被保留，因此该对象永远不会被垃圾收集。
+
+> As this example shows, even though the explicit reference to `obj` is deleted, the object is retained and visible to the garbage collector through `f`.
+
+如本示例所示，即使删除了对 obj 的显式引用，该对象仍会保留并通过 f 对垃圾收集器可见。
+
+```python
+# 2_69_weakref_finalize_reference.py
+import gc
+import weakref
+
+
+class ExpensiveObject:
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+
+def on_finalize(*args):
+    print('on_finalize({!r})'.format(args))
+
+
+obj = ExpensiveObject()
+obj_id = id(obj)
+
+f = weakref.finalize(obj, on_finalize, obj)
+f.atexit = False
+
+del obj
+
+for o in gc.get_objects():
+    if id(o) == obj_id:
+        print('found uncollected object in gc')
+```
+
+```text
+found uncollected object in gc
+(Deleting <__main__.ExpensiveObject object at 0x0000026F48BC1FD0>)
+```
+
+
+> Using a bound method of a tracked object as the callable can also prevent an object from being finalized properly.
+
+使用被跟踪对象的绑定方法作为可调用对象还可以防止对象被正确完成。
+
+> Because the callable given to `finalize` is a bound method of the instance `obj`, the finalize object holds a reference to `obj`, which cannot be deleted and garbage collected.
+
+因为给 `finalize` 的 callable 是实例 `obj` 的绑定方法，所以 finalize 对象持有对 `obj` 的引用，不能删除和垃圾回收。
+
+```python
+# 2_69_weakref_finalize_reference_method.py
+import gc
+import weakref
+
+
+class ExpensiveObject:
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+    def do_finalize(self):
+        print('do_finalize')
+
+
+obj = ExpensiveObject()
+obj_id = id(obj)
+
+f = weakref.finalize(obj, obj.do_finalize)
+f.atexit = False
+
+del obj
+
+for o in gc.get_objects():
+    if id(o) == obj_id:
+        print('found uncollected object in gc')
+```
+
+```text
+found uncollected object in gc
+(Deleting <__main__.ExpensiveObject object at 0x00000186B8151FD0>)
+```
+
+### 2.8.4 Proxies
+
+代理
