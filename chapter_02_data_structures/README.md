@@ -3001,3 +3001,430 @@ found uncollected object in gc
 ### 2.8.4 Proxies
 
 代理
+
+> It is sometimes more convenient to use a proxy, rather than a weak reference. Proxies can be used as though they were the original object, and do not need to be called before the object is accessible. As a consequence, they can be passed to a library that does not know it is receiving a reference instead of the real object.
+
+有时使用代理比使用弱引用更方便。代理可以像原始对象一样使用，并且不需要在对象可访问之前调用。因此，它们可以传递给一个不知道它正在接收引用而不是真实对象的库。
+
+
+> If the proxy is accessed after the referent object is removed, a `ReferenceError` exception is raised.
+
+如果在移除所指对象后访问代理，则会引发“ReferenceError”异常。
+
+```python
+# 2_70_weakref_proxy.py
+import weakref
+
+
+class ExpensiveObject:
+
+    def __init__(self, name):
+        self.name = name
+
+    def __del__(self):
+        print('(Deleting {})'.format(self))
+
+
+obj = ExpensiveObject('My Object')
+r = weakref.ref(obj)
+p = weakref.proxy(obj)
+
+print('via obj:', obj.name)
+print('via ref:', r().name)
+print('via proxy:', p.name)
+del obj
+print('via proxy:', p.name)
+```
+
+```text
+via obj: My Object
+via ref: My Object
+via proxy: My Object
+(Deleting <__main__.ExpensiveObject object at 0x0000024751BE1FA0>)
+Traceback (most recent call last):
+  File "c:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_02_data_structures\section_28_weakref\2_70_weakref_proxy.py", line 21, in <module>
+    print('via proxy:', p.name)
+ReferenceError: weakly-referenced object no longer exists
+```
+
+
+### 2.8.5 Caching Objects
+
+> The ref and proxy classes are considered “low level.” While they are useful for maintaining weak references to individual objects and allowing cycles to be garbage collected, the `WeakKeyDictionary` and `WeakValueDictionary` classes provide a more appropriate API for creating a cache of several objects.
+
+ref 和 proxy 类被认为是“低级”。虽然它们对于维护对单个对象的弱引用和允许循环进行垃圾回收很有用，但 `WeakKeyDictionary` 和 `WeakValueDictionary` 类为创建多个对象的缓存提供了更合适的 API。
+
+> The `WeakValueDictionary` class uses weak references to the values it holds, allowing them to be garbage collected when other code is not actually using them. Using explicit calls to the garbage collector illustrates the difference between memory handling with a regular dictionary and `WeakValueDictionary`:
+
+`WeakValueDictionary` 类使用对其持有的值的弱引用，当其他代码实际上没有使用它们时，允许它们被垃圾收集。使用对垃圾收集器的显式调用说明了使用常规字典和 `WeakValueDictionary` 处理内存之间的区别：
+
+> Any loop variables that refer to the values being cached must be cleared explicitly so the reference count of the object is decremented. Otherwise, the garbage collector will not remove the objects and they will remain in the cache. Similarly, the `all_refs` variable is used to hold references to prevent them from being garbage collected prematurely.
+
+任何引用缓存值的循环变量都必须明确清除，以便对象的引用计数递减。否则，垃圾收集器不会删除对象，它们将保留在缓存中。类似地，`all_refs` 变量用于保存引用以防止它们过早地被垃圾收集。
+
+> The `WeakKeyDictionary` works similarly but uses weak references for the keys instead of the values in the dictionary.
+
+`WeakKeyDictionary` 的工作原理类似，但对键使用弱引用而不是字典中的值。
+
+```python
+# 2_71_weakref_valuedict.py
+import gc
+from pprint import pprint
+import weakref
+
+gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
+
+class ExpensiveObject:
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return 'ExpensiveObject({})'.format(self.name)
+
+    def __del__(self):
+        print(' (Deleting {})'.format(self))
+
+
+def demo(cache_factory):
+    # Hold objects so any weak references
+    # are not removed immediately.
+    all_refs = {}
+    # Create the cache using the factory.
+    print('CACHE TYPE:', cache_factory)
+    cache = cache_factory()
+    for name in ['one', 'two', 'three']:
+        o = ExpensiveObject(name)
+        cache[name] = o
+        all_refs[name] = o
+        del o # decref
+
+    print(' all_refs =', end=' ')
+    pprint(all_refs)
+    print('\n Before, cache contains:', list(cache.keys()))
+    for name, value in cache.items():
+        print(' {} = {}'.format(name, value))
+        del value # decref
+
+    # Remove all references to the objects except the cache.
+    print('\n Cleanup:')
+    del all_refs
+    gc.collect()
+
+    print('\n After, cache contains:', list(cache.keys()))
+    for name, value in cache.items():
+        print(' {} = {}'.format(name, value))
+    print(' demo returning')
+    return
+
+
+demo(dict)
+print()
+
+demo(weakref.WeakValueDictionary)
+```
+
+```text
+CACHE TYPE: <class 'dict'>
+ all_refs = {'one': ExpensiveObject(one),
+ 'three': ExpensiveObject(three),
+ 'two': ExpensiveObject(two)}
+
+ Before, cache contains: ['one', 'two', 'three']
+ one = ExpensiveObject(one)
+ two = ExpensiveObject(two)
+ three = ExpensiveObject(three)
+
+ Cleanup:
+
+ After, cache contains: ['one', 'two', 'three']
+ one = ExpensiveObject(one)
+ two = ExpensiveObject(two)
+ three = ExpensiveObject(three)
+ demo returning
+ (Deleting ExpensiveObject(one))
+ (Deleting ExpensiveObject(two))
+ (Deleting ExpensiveObject(three))
+
+CACHE TYPE: <class 'weakref.WeakValueDictionary'>
+ all_refs = {'one': ExpensiveObject(one),
+ 'three': ExpensiveObject(three),
+ 'two': ExpensiveObject(two)}
+
+ Before, cache contains: ['one', 'two', 'three']
+ one = ExpensiveObject(one)
+ two = ExpensiveObject(two)
+ three = ExpensiveObject(three)
+
+ Cleanup:
+ (Deleting ExpensiveObject(one))
+ (Deleting ExpensiveObject(two))
+ (Deleting ExpensiveObject(three))
+
+ After, cache contains: []
+ demo returning
+```
+
+
+## 2.9 copy: Duplicate Objects
+
+> The `copy` module includes two functions, `copy()` and `deepcopy()`, for duplicating existing objects.
+
+`copy` 模块包括两个函数，`copy()` 和 `deepcopy()`，用于复制现有对象。
+
+
+### 2.9.1 Shallow Copies
+
+> The shallow copy created by `copy()` is a new container populated with references to the contents of the original object. When making a shallow copy of a `list` object, a new `list` is constructed and the elements of the original object are appended to it.
+
+`copy()` 创建的浅拷贝是一个新容器，其中填充了对原始对象内容的引用。当制作一个 `list` 对象的浅拷贝时，会构造一个新的 `list` 并将原始对象的元素附加到它上面。
+
+> For a shallow copy, the `MyClass` instance is not duplicated, so the reference in the `dup` list is to the same object that is in `my_list`.
+
+对于浅拷贝，`MyClass` 实例不是重复的，因此`dup` 列表中的引用指向`my_list` 中的同一个对象。
+
+```python
+# 2_72_copy_shallow.py
+import copy
+import functools
+
+
+@functools.total_ordering
+class MyClass:
+
+    def __init__(self, name):
+        self.name = name
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
+
+
+a = MyClass('a')
+my_list = [a]
+dup = copy.copy(my_list)
+
+print(' my_list:', my_list)
+print(' dup:', dup)
+print(' dup is my_list:', (dup is my_list))
+print(' dup == my_list:', (dup == my_list))
+print('dup[0] is my_list[0]:', (dup[0] is my_list[0]))
+print('dup[0] == my_list[0]:', (dup[0] == my_list[0]))
+```
+
+
+```text
+             my_list: [<__main__.MyClass object at 0x00000171C34E3FD0>]
+                 dup: [<__main__.MyClass object at 0x00000171C34E3FD0>]
+      dup is my_list: False
+      dup == my_list: True
+dup[0] is my_list[0]: True
+dup[0] == my_list[0]: True
+```
+
+
+### 2.9.2 Deep Copies
+
+> The deep copy created by `deepcopy()` is a new container populated with copies of the contents of the original object. To make a deep copy of a list, a new `list` is constructed, the elements of the original list are copied, and then those copies are appended to the new list.
+
+`deepcopy()`创建的深层副本是一个新容器，其中填充了原始对象内容的副本。要对列表进行深度复制，需要构造一个新的列表，复制原始列表的元素，然后将这些副本附加到新列表中。
+
+> Replacing the call to `copy()` with `deepcopy()` makes the difference in the output apparent.
+
+用 `deepcopy()` 替换对 `copy()` 的调用会使输出的差异变得明显。
+
+> The first element of the list is no longer the same object reference, but when the two objects are compared they still evaluate as being equal.
+
+列表的第一个元素不再是同一个对象引用，但是当两个对象进行比较时，它们仍然被评估为相等。
+
+```python
+# 2_73_copy_deep.py
+import copy
+import functools
+
+
+@functools.total_ordering
+class MyClass:
+
+    def __init__(self, name):
+        self.name = name
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
+
+
+a = MyClass('a')
+my_list = [a]
+dup = copy.deepcopy(my_list)
+
+print('             my_list:', my_list)
+print('                 dup:', dup)
+print('      dup is my_list:', (dup is my_list))
+print('      dup == my_list:', (dup == my_list))
+print('dup[0] is my_list[0]:', (dup[0] is my_list[0]))
+print('dup[0] == my_list[0]:', (dup[0] == my_list[0]))
+```
+
+
+```text
+             my_list: [<__main__.MyClass object at 0x00000258E7D43FD0>]
+                 dup: [<__main__.MyClass object at 0x00000258E7DD2310>]
+      dup is my_list: False
+      dup == my_list: True
+dup[0] is my_list[0]: False
+dup[0] == my_list[0]: True
+```
+
+
+### 2.9.3 Customizing Copy Behavior
+
+> It is possible to control how copies are made using the `__copy__()` and `__deepcopy__()` special methods.
+
+> * `__copy__()` is called without any arguments and should return a shallow copy of the object.
+
+> * `__deepcopy__()` is called with a memo dictionary and should return a deep copy of the object. Any member attributes that need to be deep-copied should be passed to `copy.deepcopy()`, along with the memo dictionary, to control for recursion. (The memo dictionary is explained in more detail later.)
+
+> The following example illustrates how the methods are called.
+
+
+
+可以使用 `__copy__()` 和 `__deepcopy__()` 特殊方法来控制如何制作副本。
+* `__copy__()` 在没有任何参数的情况下被调用，并且应该返回对象的浅拷贝。
+* `__deepcopy__()` 使用备忘录字典调用，应该返回对象的深层副本。任何需要深度复制的成员属性都应该与备忘录字典一起传递给 `copy.deepcopy()`，以控制递归。（备忘录词典将在后面更详细地解释。）
+以下示例说明了如何调用这些方法。
+
+
+> The memo dictionary is used to keep track of the values that have been copied already, so as to avoid infinite recursion.
+
+备忘录字典用于跟踪已经复制的值，以避免无限递归。
+
+```python
+# 2_74_copy_hooks.py
+import copy
+import functools
+
+
+@functools.total_ordering
+class MyClass:
+
+    def __init__(self, name):
+        self.name = name
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
+    
+    def __copy__(self):
+        print('__copy__()')
+        return MyClass(self.name)
+
+    def __deepcopy__(self, memo):
+        print('__deepcopy__({})'.format(memo))
+        return MyClass(copy.deepcopy(self.name, memo))
+
+
+a = MyClass('a')
+
+sc = copy.copy(a)
+dc = copy.deepcopy(a)
+```
+
+
+```text
+__copy__()
+__deepcopy__({})
+```
+
+
+### 2.9.4 Recursion in Deep Copy
+
+> To avoid problems with duplicating recursive data structures, `deepcopy()` uses a dictionary to track objects that have already been copied. This dictionary is passed to the `__deepcopy__()` method so it can be examined there as well.
+
+为了避免重复递归数据结构的问题，`deepcopy()` 使用字典来跟踪已经被复制的对象。这个字典被传递给 `__deepcopy__()` 方法，所以它也可以在那里检查。
+
+> The next example shows how an interconnected data structure such as a directed graph can help protect against recursion by implementing a `__deepcopy__()` method.
+ 
+下一个示例展示了诸如有向图之类的互连数据结构如何通过实现“__deepcopy__()”方法来帮助防止递归。
+
+> The `Graph` class includes a few basic directed graph methods. An instance can be initialized with a name and a list of existing nodes to which it is connected. The `add_connection()` method is used to set up bidirectional connections. It is also used by the deep copy operator.
+
+`Graph` 类包括一些基本的有向图方法。一个实例可以用一个名称和它所连接的现有节点的列表来初始化。`add_connection()` 方法用于建立双向连接。它也被深拷贝操作符使用。
+
+
+```python
+# 2_75_copy_recursion.py
+import copy
+
+
+class Graph:
+
+    def __init__(self, name, connections):
+        self.name = name
+        self.connections = connections
+
+    def add_connection(self, other):
+        self.connections.append(other)
+
+    def __repr__(self):
+        return 'Graph(name={}, id={})'.format(self.name, id(self))
+    
+    def __deepcopy__(self, memo):
+        print('\nCalling __deepcopy__ for {!r}'.format(self))
+        if self in memo:
+            existing = memo.get(self)
+            print(' Already copied to {!r}'.format(existing))
+            return existing
+        print(' Memo dictionary:')
+        if memo:
+            for k, v in memo.items():
+                print(' {}: {}'.format(k, v))
+        else:
+            print(' (empty)')
+        dup = Graph(copy.deepcopy(self.name, memo), [])
+        print(' Copying to new object {}'.format(dup))
+        memo[self] = dup
+        for c in self.connections:
+            dup.add_connection(copy.deepcopy(c, memo))
+        return dup
+
+
+root = Graph('root', [])
+a = Graph('a', [root])
+b = Graph('b', [a, root])
+root.add_connection(a)
+root.add_connection(b)
+
+dup = copy.deepcopy(root)
+```
+
+```text
+
+Calling __deepcopy__ for Graph(name=root, id=1902776709072)
+ Memo dictionary:
+ (empty)
+ Copying to new object Graph(name=root, id=1902776708352)
+
+Calling __deepcopy__ for Graph(name=a, id=1902776708880)
+ Memo dictionary:
+ Graph(name=root, id=1902776709072): Graph(name=root, id=1902776708352)
+ Copying to new object Graph(name=a, id=1902776707776)
+
+Calling __deepcopy__ for Graph(name=root, id=1902776709072)
+ Already copied to Graph(name=root, id=1902776708352)
+
+Calling __deepcopy__ for Graph(name=b, id=1902776708688)
+ Memo dictionary:
+ Graph(name=root, id=1902776709072): Graph(name=root, id=1902776708352)
+ Graph(name=a, id=1902776708880): Graph(name=a, id=1902776707776)
+ 1902776709072: Graph(name=root, id=1902776708352)
+ 1902776716352: [Graph(name=root, id=1902776709072), Graph(name=a, id=1902776708880)]
+ 1902776708880: Graph(name=a, id=1902776707776)
+ Copying to new object Graph(name=b, id=1902776707680)
+```
