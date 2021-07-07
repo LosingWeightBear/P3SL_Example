@@ -3428,3 +3428,149 @@ Calling __deepcopy__ for Graph(name=b, id=1902776708688)
  1902776708880: Graph(name=a, id=1902776707776)
  Copying to new object Graph(name=b, id=1902776707680)
 ```
+
+> The `Graph` class includes a few basic directed graph methods. 
+> An instance can be initialized with a name and a list of existing nodes to which it is connected. 
+> The `add_connection()` method is used to set up bidirectional connections. 
+> It is also used by the deep copy operator.
+
+`Graph` 类包括一些基本的有向图方法。
+一个实例可以用一个名称和它所连接的现有节点的列表来初始化。
+`add_connection()` 方法用于建立双向连接。 
+它也被深拷贝操作符使用。
+
+> The `__deepcopy__()` method prints messages to show how it is called, and manages the memo dictionary contents as needed. 
+> Instead of copying the entire connection list wholesale, it creates a new list and appends copies of the individual connections to it. 
+> That ensures that the memo dictionary is updated as each new node is duplicated, and it avoids recursion issues or extra copies of nodes. 
+> As before, the method returns the copied object when it is done.
+
+
+ `__deepcopy__()` 方法打印消息以显示它是如何调用的，并根据需要管理备忘录字典内容。
+ 它不是批量复制整个连接列表，而是创建一个新列表并将各个连接的副本附加到该列表中。
+ 这可确保在复制每个新节点时更新备忘录字典，并避免递归问题或节点的额外副本。
+ 
+> The graph shown in Figure 2.1 includes several cycles, but handling the recursion with the memo dictionary prevents the traversal from causing a stack overflow error. 
+> When the root node is copied, it produces the following output.
+
+图 2.1 所示的图形包括几个循环，但是使用备忘录字典处理递归可以防止遍历导致堆栈溢出错误。
+当根节点被复制时，它会产生以下输出。
+
+> The second time the `root` node is encountered, while the `a` node is being copied,
+> `__deepcopy__()` detects the recursion and reuses the existing value from the memo dictionary instead of creating a new object.
+
+第二次遇到根节点，同时复制a节点，`__deepcopy__()` 检测递归并重用备忘录字典中的现有值，而不是创建新对象。
+
+
+## 2.10 pprint: Pretty-Print Data Structures
+
+> The `pprint` module contains a “pretty printer” for producing aesthetically pleasing views of data structures. 
+> The formatter produces representations of data structures that can be parsed correctly by the interpreter, and that are also easy for a human to read. 
+> The output is kept on a single line, if possible, and indented when split across multiple lines.
+
+`pprint` 模块包含一个“漂亮的打印机”，用于生成美观的数据结构视图。
+格式化程序生成数据结构的表示，这些表示可以被解释器正确解析，并且也易于人类阅读。
+如果可能，输出将保留在一行上，并在拆分为多行时缩进。
+
+
+> The examples in this section all depend on pprint_data.py, which is shown here.
+
+本节中的示例都依赖于 pprint_data.py，如下所示。
+
+
+### 2.10.1 Printing
+
+> The simplest way to use the module is through the `pprint()` function.
+
+使用该模块的最简单方法是通过 `pprint()` 函数。
+
+> `pprint()` formats an object and writes it to the data stream passed in as an argument (or `sys.stdout` by default).
+
+`pprint()` 格式化一个对象并将其写入作为参数传入的数据流（或默认情况下为 `sys.stdout`）。
+
+
+```python
+# 2_77_pprint_pprint.py
+from pprint import pprint
+
+from pprint_data import data
+
+print('PRINT:')
+print(data)
+print()
+print('PPRINT:')
+pprint(data)
+```
+
+```text
+PRINT:
+[(1, {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D'}), (2, {'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I', 'j': 'J', 'k': 'K', 'l': 'L'}), (3, ['m', 'n']), (4, ['o', 'p', 'q']), (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
+
+PPRINT:
+[(1, {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D'}),
+ (2,
+  {'e': 'E',
+   'f': 'F',
+   'g': 'G',
+   'h': 'H',
+   'i': 'I',
+   'j': 'J',
+   'k': 'K',
+   'l': 'L'}),
+ (3, ['m', 'n']),
+ (4, ['o', 'p', 'q']),
+ (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
+```
+
+
+### 2.10.2 Formatting
+
+> To format a data structure without writing it directly to a stream (for example, for logging), use `pformat()` to build a string representation.
+
+要格式化数据结构而不将其直接写入流（例如，用于日志记录），请使用 `pformat()` 来构建字符串表示。
+
+> The formatted string can then be printed or logged independently.
+
+然后可以独立打印或记录格式化的字符串。
+
+```python
+# 2_78_pprint_pformat.py
+import logging
+from pprint import pformat
+from pprint_data import data
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(levelname)-8s %(message)s',
+)
+
+logging.debug('Logging pformatted data')
+formatted = pformat(data)
+for line in formatted.splitlines():
+    logging.debug(line.rstrip())
+```
+
+```text
+DEBUG    Logging pformatted data
+DEBUG    [(1, {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D'}),
+DEBUG     (2,
+DEBUG      {'e': 'E',
+DEBUG       'f': 'F',
+DEBUG       'g': 'G',
+DEBUG       'h': 'H',
+DEBUG       'i': 'I',
+DEBUG       'j': 'J',
+DEBUG       'k': 'K',
+DEBUG       'l': 'L'}),
+DEBUG     (3, ['m', 'n']),
+DEBUG     (4, ['o', 'p', 'q']),
+DEBUG     (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
+```
+
+
+### 2.10.3 Arbitrary Classes
+
+> The PrettyPrinter class used by `pprint()` can also work with custom classes, if they define a `__repr__()` method.
+
+ `pprint()` 使用的 PrettyPrinter 类也可以与自定义类一起使用，如果它们定义了一个 `__repr__()` 方法。
+
+ 

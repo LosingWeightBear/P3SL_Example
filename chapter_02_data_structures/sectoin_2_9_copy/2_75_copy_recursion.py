@@ -12,7 +12,7 @@ class Graph:
 
     def __repr__(self):
         return 'Graph(name={}, id={})'.format(self.name, id(self))
-    
+
     def __deepcopy__(self, memo):
         print('\nCalling __deepcopy__ for {!r}'.format(self))
         if self in memo:

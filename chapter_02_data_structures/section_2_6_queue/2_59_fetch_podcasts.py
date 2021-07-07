@@ -15,9 +15,9 @@ feed_urls = [
     'http://talkpython.fm/episodes/rss',
 ]
 
+
 def message(s):
     print('{}: {}'.format(threading.current_thread().name, s))
-
 
 
 def download_enclosures(q):
@@ -50,7 +50,6 @@ for i in range(num_fetch_threads):
     )
     worker.setDaemon(True)
     worker.start()
-
 
 
 # Download the feed(s) and put the enclosure URLs into
