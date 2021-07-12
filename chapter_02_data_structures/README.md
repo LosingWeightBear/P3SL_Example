@@ -3573,4 +3573,72 @@ DEBUG     (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
 
  `pprint()` 使用的 PrettyPrinter 类也可以与自定义类一起使用，如果它们定义了一个 `__repr__()` 方法。
 
+> The representations of the nested objects are combined by the `PrettyPrinter` to return the full string representation.
+
+嵌套对象的表示由`PrettyPrinter` 组合以返回完整的字符串表示。
  
+```python
+# 2_79_pprint_arbitrary_object.py
+from pprint import pprint
+
+
+class node:
+    
+    def __init__(self, name, contents=[]):
+        self.name = name
+        self.contents = contents[:]
+
+    def __repr__(self):
+        return (
+            'node(' + repr(self.name) + ', ' +
+            repr(self.contents) + ')'
+        )
+
+trees = [
+    node('node-1'),
+    node('node-2', [node('node-2-1')]),
+    node('node-3', [node('node-3-1')]),
+]
+pprint(trees)
+```
+
+
+```text
+[node('node-1', []),
+ node('node-2', [node('node-2-1', [])]),
+ node('node-3', [node('node-3-1', [])])]
+```
+
+
+### 2.10.4 Recursion
+
+> Recursive data structures are represented with a reference to the original source of the data, given in the format `<Recursion on typename with id=number>`.
+
+
+> In this example, the list `local_data` is added to itself, creating a recursive reference.
+
+在这个例子中，列表 `local_data` 被添加到自身，创建一个递归引用。
+
+
+```python
+# 2_80_pprint_recursion.py
+from pprint import pprint
+
+local_data = ['a', 'b', 1, 2]
+local_data.append(local_data)
+
+print('id(local_data) =>', id(local_data))
+pprint(local_data)
+
+```
+
+
+```text
+id(local_data) => 2089871907840
+['a', 'b', 1, 2, <Recursion on list with id=2089871907840>]
+```
+
+
+### 2.10.5 Limiting Nested Output
+
+> For very deep data structures, it may not be desirable for the output to include all of the details. The data may not be formatted properly, the formatted text might be too large to manage, or some of the data may be extraneous.
