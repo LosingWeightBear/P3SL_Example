@@ -3642,3 +3642,5 @@ id(local_data) => 2089871907840
 ### 2.10.5 Limiting Nested Output
 
 > For very deep data structures, it may not be desirable for the output to include all of the details. The data may not be formatted properly, the formatted text might be too large to manage, or some of the data may be extraneous.
+
+对于非常深的数据结构，可能不希望输出包含所有细节。数据的格式可能不正确，格式化的文本可能太大而无法管理，或者某些数据可能是无关紧要的。
