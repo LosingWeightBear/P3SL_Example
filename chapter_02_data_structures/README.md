@@ -3644,3 +3644,151 @@ id(local_data) => 2089871907840
 > For very deep data structures, it may not be desirable for the output to include all of the details. The data may not be formatted properly, the formatted text might be too large to manage, or some of the data may be extraneous.
 
 对于非常深的数据结构，可能不希望输出包含所有细节。数据的格式可能不正确，格式化的文本可能太大而无法管理，或者某些数据可能是无关紧要的。
+
+> Use the `depth` argument to control how far down into the nested data structure the pretty printer recurses. Levels not included in the output are represented by ellipses.
+
+使用“depth”参数来控制漂亮打印机递归到嵌套数据结构的深度。未包含在输出中的级别由省略号表示。
+
+```python
+# 2_81_pprint_depth.py
+from pprint import pprint
+
+from pprint_data import data
+
+pprint(data, depth=1)
+pprint(data, depth=2)
+```
+
+
+```text
+[(...), (...), (...), (...), (...)]
+[(1, {...}), (2, {...}), (3, [...]), (4, [...]), (5, [...])]
+```
+
+
+### 2.10.6 Controlling Output Width
+
+> The default output width for the formatted text is 80 columns. To adjust that width, use the `width` argument to `pprint()`.
+
+格式化文本的默认输出宽度为 80 列。要调整该宽度，请使用 `pprint()` 的 `width` 参数。
+
+
+> When the width is too small to accommodate the formatted data structure, the lines are not truncated or wrapped if doing so would introduce invalid syntax.
+
+当宽度太小而无法容纳格式化的数据结构时，如果这样做会引入无效语法，则不会截断或换行。
+
+```python
+# 2_82_pprint_width.py
+from pprint import pprint
+
+from pprint_data import data
+
+for width in [80, 5]:
+    print('WIDTH =', width)
+    pprint(data, width=width)
+    print()
+```
+
+
+```text
+WIDTH = 80
+[(1, {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D'}),
+ (2,
+  {'e': 'E',
+   'f': 'F',
+   'g': 'G',
+   'h': 'H',
+   'i': 'I',
+   'j': 'J',
+   'k': 'K',
+   'l': 'L'}),
+ (3, ['m', 'n']),
+ (4, ['o', 'p', 'q']),
+ (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
+
+WIDTH = 5
+[(1,
+  {'a': 'A',
+   'b': 'B',
+   'c': 'C',
+   'd': 'D'}),
+ (2,
+  {'e': 'E',
+   'f': 'F',
+   'g': 'G',
+   'h': 'H',
+   'i': 'I',
+   'j': 'J',
+   'k': 'K',
+   'l': 'L'}),
+ (3,
+  ['m',
+   'n']),
+ (4,
+  ['o',
+   'p',
+   'q']),
+ (5,
+  ['r',
+   's',
+   'tu',
+   'v',
+   'x',
+   'y',
+   'z'])]
+```
+
+
+> The `compact` flag tells `pprint()` to try to fit more data on each individual line, rather than spreading complex data structures across lines.
+
+`compact` 标志告诉 `pprint()` 尝试在每一行上容纳更多数据，而不是跨行传播复杂的数据结构。
+
+> This example shows that when a data structure does not fit on a line, it is split up (as with the second item in the data list). When multiple elements can fit on a line, as with the third and fourth members, they are placed that way.
+
+此示例显示当数据结构不适合一行时，它会被拆分（与数据列表中的第二项一样）。当多个元素可以放在一条线上时，就像第三个和第四个成员一样，它们就是这样放置的。
+
+
+```python
+# 2_83_pprint_compact.py
+from pprint import pprint
+
+from pprint_data import data
+
+print('DEFAULT:')
+pprint(data, compact=False)
+print('\nCOMPACT:')
+pprint(data, compact=True)
+```
+
+
+
+```text
+DEFAULT:
+[(1, {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D'}),
+ (2,
+  {'e': 'E',
+   'f': 'F',
+   'g': 'G',
+   'h': 'H',
+   'i': 'I',
+   'j': 'J',
+   'k': 'K',
+   'l': 'L'}),
+ (3, ['m', 'n']),
+ (4, ['o', 'p', 'q']),
+ (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
+
+COMPACT:
+[(1, {'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D'}),
+ (2,
+  {'e': 'E',
+   'f': 'F',
+   'g': 'G',
+   'h': 'H',
+   'i': 'I',
+   'j': 'J',
+   'k': 'K',
+   'l': 'L'}),
+ (3, ['m', 'n']), (4, ['o', 'p', 'q']),
+ (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
+```
