@@ -3792,3 +3792,7 @@ COMPACT:
  (3, ['m', 'n']), (4, ['o', 'p', 'q']),
  (5, ['r', 's', 'tu', 'v', 'x', 'y', 'z'])]
 ```
+
+
+> Standard library documentation for pprint
+> https://docs.python.org/3.5/library/pprint.html
