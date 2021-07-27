@@ -223,8 +223,20 @@ updated wrapper:
  object: functools.partial(<function myfunc at 0x0000019166E3E0D0>, b=4)
  __name__: myfunc
  __doc__ 'Docstring for myfunc().'
-
-
-Process finished with exit code 0
-
 ```
+
+
+#### 3.1.1.3 Other Callables
+
+> Partials work with any callable object, not just with stand-alone functions.
+
+Partials 适用于任何可调用的对象，而不仅仅是独立的函数。
+
+> This example creates partials from an instance of a class with a `__call__()` method.
+
+此示例使用 `__call__()` 方法从类的实例创建partials。
+
+
+
+
+#### 3.1.1.4 Methods and Functions
