@@ -237,6 +237,70 @@ Partials 适用于任何可调用的对象，而不仅仅是独立的函数。
 此示例使用 `__call__()` 方法从类的实例创建partials。
 
 
+```python
+# 3_3_functools_callable.py
+import functools
 
+
+class MyClass:
+    """Demonstration class for functools"""
+
+    def __call__(self, e, f=6):
+        """Docstring for MyClass.__call__"""
+        print(' called object with:', (self, e, f))
+
+
+def show_details(name, f):
+    """Show details of a callable object."""
+    print('{}:'.format(name))
+    print(' object:', f)
+    print(' __name__:', end=' ')
+    try:
+        print(f.__name__)
+    except AttributeError:
+        print('(no __name__)')
+        print(' __doc__', repr(f.__doc__))
+    return
+
+
+o = MyClass()
+
+show_details('instance', o)
+o('e goes here')
+print()
+
+p = functools.partial(o, e='default for e', f=8)
+functools.update_wrapper(p, o)
+show_details('instance wrapper', p)
+p()
+
+```
+
+```text
+instance:
+ object: <__main__.MyClass object at 0x000001E3FB269FA0>
+ __name__: (no __name__)
+ __doc__ 'Demonstration class for functools'
+ called object with: (<__main__.MyClass object at 0x000001E3FB269FA0>, 'e goes here', 6)
+
+instance wrapper:
+ object: functools.partial(<__main__.MyClass object at 0x000001E3FB269FA0>, e='default for e', f=8)
+ __name__: (no __name__)
+ __doc__ 'Demonstration class for functools'
+ called object with: (<__main__.MyClass object at 0x000001E3FB269FA0>, 'default for e', 8)
+
+Process finished with exit code 0
+
+```
 
 #### 3.1.1.4 Methods and Functions
+
+> While `partial()` returns a callable ready to be used directly, `partialmethod()` returns a
+callable ready to be used as an unbound method of an object. In the following example,
+the same stand-alone function is added as an attribute of `MyClass` twice, once using
+`partialmethod()` as `method1()` and again using `partial()` as `method2()`.
+
+`partial()`返回一个可直接使用的可调用对象，而`partialmethod()`返回一个可调用对象，可用作对象的未绑定方法。
+在下面的示例中，相同的独立函数被添加为`MyClass`的属性两次，一次使用`partialmethod()`作为`method1()`，再次使用`partial()`作为`method2()`
+
+
