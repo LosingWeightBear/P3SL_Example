@@ -364,5 +364,129 @@ ERROR: standalone() missing 1 required positional argument: 'self'
 ```
 
 
+#### 3.1.1.5 Acquiring Function Properties for Decorators
+
+> Updating the properties of a wrapped callable is especially useful for decorators, because
+the transformed function ends up with properties of the original “bare” function.
+
+更新包装的可调用对象的属性对于装饰器特别有用，因为转换后的函数最终具有原始“裸”函数的属性。
+
+> `functools` provides a decorator, `wraps()`, that applies `update_wrapper()` to the decorated
+function.
 
 
+`functools` provides a decorator, `wraps()`, that applies `update_wrapper()` to the decorated
+function.
+
+
+```python
+# 3_5_functools_wraps.py
+import functools
+
+
+def show_details(name, f):
+    """Show details of a callable object."""
+    print('{}:'.format(name))
+    print(' object:', f)
+    print(' __name__:', end=' ')
+    try:
+        print(f.__name__)
+    except AttributeError:
+        print('(no __name__)')
+        print(' __doc__', repr(f.__doc__))
+        print()
+
+
+def simple_decorator(f):
+    @functools.wraps(f)
+    def decorated(a='decorated defaults', b=1):
+        print(' decorated:', (a, b))
+        print(' ', end=' ')
+        return f(a, b=b)
+    return decorated
+
+
+def myfunc(a, b=2):
+    """myfunc() is not complicated"""
+    print(' myfunc:', (a, b))
+    return
+
+
+# The raw function
+show_details('myfunc', myfunc)
+myfunc('unwrapped, default b')
+myfunc('unwrapped, passing b', 3)
+print()
+
+
+# Wrap explicitly.
+wrapped_myfunc = simple_decorator(myfunc)
+show_details('wrapped_myfunc', wrapped_myfunc)
+wrapped_myfunc()
+wrapped_myfunc('args to wrapped', 4)
+print()
+
+
+# Wrap with decorator syntax.
+@simple_decorator
+def decorated_myfunc(a, b):
+    myfunc(a, b)
+    return
+
+
+show_details('decorated_myfunc', decorated_myfunc)
+decorated_myfunc()
+decorated_myfunc('args to decorated', 4)
+
+```
+
+```text
+myfunc:
+ object: <function myfunc at 0x0000024C777CE8B0>
+ __name__: myfunc
+ myfunc: ('unwrapped, default b', 2)
+ myfunc: ('unwrapped, passing b', 3)
+
+wrapped_myfunc:
+ object: <function myfunc at 0x0000024C77A051F0>
+ __name__: myfunc
+ decorated: ('decorated defaults', 1)
+   myfunc: ('decorated defaults', 1)
+ decorated: ('args to wrapped', 4)
+   myfunc: ('args to wrapped', 4)
+
+decorated_myfunc:
+ object: <function decorated_myfunc at 0x0000024C77A053A0>
+ __name__: decorated_myfunc
+ decorated: ('decorated defaults', 1)
+   myfunc: ('decorated defaults', 1)
+ decorated: ('args to decorated', 4)
+   myfunc: ('args to decorated', 4)
+
+```
+
+### 3.1.2 Comparison
+
+> Under Python 2, classes could define a `__cmp__()` method that returns -1, 0, or 1 based
+on whether the object is less than, equal to, or greater than, respectively, the item being
+compared. Python 2.1 introduced the rich comparison methods API (`__lt__()`, `__le__()`,
+`__eq__()`, `__ne__()`, `__gt__()`, and `__ge__()`), which perform a single comparison operation
+and return a boolean value. Python 3 deprecated `__cmp__()` in favor of these new methods,
+and functools provides tools to make it easier to write classes that comply with the new
+comparison requirements in Python 3.
+
+在 Python 2 下，类可以定义一个 `__cmp__()` 方法，该方法根据对象是小于、等于还是大于被比较的项目分别返回 -1、0 或 1。
+Python 2.1 引入了丰富的比较方法 API（`__lt__()`、`__le__()`、`__eq__()`、`__ne__()`、`__gt__()` 和 `__ge__()`），它们执行单个比较操作并返回一个布尔值。
+Python 3 弃用了 `__cmp__()` 以支持这些新方法，并且 functools 提供的工具可以更轻松地编写符合 Python 3 中新比较要求的类。
+
+
+#### 3.1.2.1 Rich Comparison
+
+> The rich comparison API is designed to allow classes with complex comparisons to implement
+each test in the most efficient way possible. However, for classes where comparison is
+relatively simple, there is no point in manually creating each of the rich comparison methods.
+The `total_ordering()` class decorator takes a class that provides some of the methods,
+and adds the rest of them.
+
+丰富的比较 API 旨在允许具有复杂比较的类以最有效的方式实现每个测试。 但是，对于比较相对简单的类，手动创建每个丰富的比较方法是没有意义的。 
+`total_ordering()` 类装饰器接受一个提供一些方法的类，并添加其余的方法。
