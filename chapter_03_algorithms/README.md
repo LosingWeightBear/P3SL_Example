@@ -303,4 +303,66 @@ the same stand-alone function is added as an attribute of `MyClass` twice, once 
 `partial()`返回一个可直接使用的可调用对象，而`partialmethod()`返回一个可调用对象，可用作对象的未绑定方法。
 在下面的示例中，相同的独立函数被添加为`MyClass`的属性两次，一次使用`partialmethod()`作为`method1()`，再次使用`partial()`作为`method2()`
 
+> `method1()` can be called from an instance of `MyClass`, and the instance is passed as the
+first argument, just as with methods that are defined in the usual way. `method2()` is not set
+up as a bound method, so the `self` argument must be passed explicitly; otherwise, the call
+will result in a `TypeError`.
+
+`method1()` 可以从 `MyClass` 的实例中调用，并且该实例作为第一个参数传递，就像以通常方式定义的方法一样。 
+`method2()` 未设置为绑定方法，因此必须显式传递 `self` 参数；否则，调用将导致 `TypeError`。
+
+
+```python
+# 3_4_functools_partialmethod.py
+import functools
+
+
+def standalone(self, a=1, b=2):
+    """Standalone function"""
+    print(' called standalone with:', (self, a, b))
+    if self is not None:
+        print(' self.attr =', self.attr)
+
+
+class MyClass:
+    """Demonstration class for functools"""
+
+    def __init__(self):
+        self.attr = 'instance attribute'
+
+    method1 = functools.partialmethod(standalone)
+    method2 = functools.partial(standalone)
+
+
+o = MyClass()
+print('standalone')
+standalone(None)
+print()
+
+print('method1 as partialmethod')
+o.method1()
+print()
+
+print('method2 as partial')
+try:
+    o.method2()
+except TypeError as err:
+    print('ERROR: {}'.format(err))
+```
+
+```text
+standalone
+ called standalone with: (None, 1, 2)
+
+method1 as partialmethod
+ called standalone with: (<__main__.MyClass object at 0x000002A360369F10>, 1, 2)
+ self.attr = instance attribute
+
+method2 as partial
+ERROR: standalone() missing 1 required positional argument: 'self'
+
+```
+
+
+
 
