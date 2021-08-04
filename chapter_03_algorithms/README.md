@@ -490,3 +490,103 @@ and adds the rest of them.
 
 丰富的比较 API 旨在允许具有复杂比较的类以最有效的方式实现每个测试。 但是，对于比较相对简单的类，手动创建每个丰富的比较方法是没有意义的。 
 `total_ordering()` 类装饰器接受一个提供一些方法的类，并添加其余的方法。
+
+> The class must provide implementation of `__eq__()` and one other rich comparison
+method. The decorator adds implementations of the rest of the methods that work by using
+the comparisons provided. If a comparison cannot be made, the method should return
+`NotImplemented` so the comparison can be tried using the reverse comparison operators on
+the other object, before failing entirely.
+
+该类必须提供`__eq__()` 和另一种丰富的比较方法的实现。装饰器通过使用提供的比较来添加其余方法的实现。
+如果无法进行比较，则该方法应返回`NotImplemented`，以便在完全失败之前可以在另一个对象上使用反向比较运算符尝试进行比较。
+
+```python
+# 3_6_functools_total_ordering.py
+
+import functools
+import inspect
+from pprint import pprint
+
+
+@functools.total_ordering
+class MyObject:
+
+    def __init__(self, val):
+        self.val = val
+
+    def __eq__(self, other):
+        print(' testing __eq__({}, {})'.format(self.val, other.val))
+        return self.val == other.val
+
+    def __gt__(self, other):
+        print(' testing __gt__({}, {})'.format(self.val, other.val))
+        return self.val > other.val
+
+
+print('Methods:\n')
+pprint(inspect.getmembers(MyObject, inspect.isfunction))
+
+a = MyObject(1)
+b = MyObject(2)
+
+print('\nComparisons:')
+for expr in ['a < b', 'a <= b', 'a == b', 'a >= b', 'a > b']:
+    print('\n{:<6}:'.format(expr))
+    result = eval(expr)
+    print(' result of {}: {}'.format(expr, result))
+```
+
+```text
+[('__eq__', <function MyObject.__eq__ at 0x000002985BA60550>),
+ ('__ge__', <function _ge_from_gt at 0x000002985B96B160>),
+ ('__gt__', <function MyObject.__gt__ at 0x000002985BA605E0>),
+ ('__init__', <function MyObject.__init__ at 0x000002985BA55E50>),
+ ('__le__', <function _le_from_gt at 0x000002985B96B1F0>),
+ ('__lt__', <function _lt_from_gt at 0x000002985B96B0D0>)]
+
+Comparisons:
+
+a < b :
+ testing __gt__(1, 2)
+ testing __eq__(1, 2)
+ result of a < b: True
+
+a <= b:
+ testing __gt__(1, 2)
+ result of a <= b: True
+
+a == b:
+ testing __eq__(1, 2)
+ result of a == b: False
+
+a >= b:
+ testing __gt__(1, 2)
+ testing __eq__(1, 2)
+ result of a >= b: False
+
+a > b :
+ testing __gt__(1, 2)
+ result of a > b: False
+```
+
+
+#### 3.1.2.2 Collation Order
+
+> Since old-style comparison functions are deprecated in Python 3, the `cmp` argument to
+functions like `sort()` is also no longer supported. Older programs that use comparison
+functions can use `cmp_to_key()` to convert them to a function that returns a `collation key`,
+which is used to determine the position in the final sequence.
+
+由于旧式比较函数在 Python 3 中已弃用，因此也不再支持像 `sort()` 这样的函数的 `cmp` 参数。
+使用比较函数的旧程序可以使用 `cmp_to_key()` 将它们转换为返回 `collat​​ion key` 的函数，用于确定最终序列中的位置
+
+
+> Normally `cmp_to_key()` would be used directly, but in this example an extra wrapper
+function is introduced to print out more information as the key function is being called.
+
+> The output shows that `sorted()` starts by calling `get_key_wrapper()` for each item
+in the sequence to produce a key. The keys returned by `cmp_to_key()` are instances of a
+class defined in `functools` that implements the rich comparison API using the old-style
+comparison function passed in. After all of the keys are created, the sequence is sorted by
+comparing the keys.
+
