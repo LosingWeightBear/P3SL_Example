@@ -583,6 +583,8 @@ which is used to determine the position in the final sequence.
 
 > Normally `cmp_to_key()` would be used directly, but in this example an extra wrapper
 function is introduced to print out more information as the key function is being called.
+ 
+通常会直接使用 `cmp_to_key()`，但在这个例子中，引入了一个额外的包装函数来在调用 key 函数时打印出更多信息。
 
 > The output shows that `sorted()` starts by calling `get_key_wrapper()` for each item
 in the sequence to produce a key. The keys returned by `cmp_to_key()` are instances of a
@@ -590,3 +592,156 @@ class defined in `functools` that implements the rich comparison API using the o
 comparison function passed in. After all of the keys are created, the sequence is sorted by
 comparing the keys.
 
+输出显示`sorted()`首先为序列中的每个项目调用`get_key_wrapper()`以生成一个键。 
+`cmp_to_key()` 返回的键是 `functools` 中定义的类的实例，该类使用传入的旧式比较函数实现了丰富的比较 API。
+创建所有键后，通过比较键对序列进行排序。
+
+```python
+# 3_6_functools_cmp_to_key.py
+import functools
+
+
+class MyObject:
+    def __init__(self, val):
+        self.val = val
+
+    def __str__(self):
+        return 'MyObject({})'.format(self.val)
+
+
+def compare_obj(a, b):
+    """Old-style comparison function."""
+    print('comparing {} and {}'.format(a, b))
+    if a.val < b.val:
+        return -1
+    elif a.val > b.val:
+        return 1
+    return 0
+
+
+# Make a key function using cmp_to_key().
+get_key = functools.cmp_to_key(compare_obj)
+
+
+def get_key_wrapper(o):
+    """Wrapper function for get_key to allow for print statements."""
+    new_key = get_key(o)
+    print('key_wrapper({}) -> {!r}'.format(o, new_key))
+    return new_key
+
+
+objs = [MyObject(x) for x in range(5, 0, -1)]
+
+for o in sorted(objs, key=get_key_wrapper):
+    print(o)
+
+```
+
+```text
+key_wrapper(MyObject(5)) -> <functools.KeyWrapper object at 0x000001A1DBF9CE90>
+key_wrapper(MyObject(4)) -> <functools.KeyWrapper object at 0x000001A1DBF9CE70>
+key_wrapper(MyObject(3)) -> <functools.KeyWrapper object at 0x000001A1DBF9CCB0>
+key_wrapper(MyObject(2)) -> <functools.KeyWrapper object at 0x000001A1DBF9CC90>
+key_wrapper(MyObject(1)) -> <functools.KeyWrapper object at 0x000001A1DBF9CE50>
+comparing MyObject(4) and MyObject(5)
+comparing MyObject(3) and MyObject(4)
+comparing MyObject(2) and MyObject(3)
+comparing MyObject(1) and MyObject(2)
+MyObject(1)
+MyObject(2)
+MyObject(3)
+MyObject(4)
+MyObject(5)
+```
+
+
+
+### 3.1.3 Caching
+
+> The `lru_cache()` decorator wraps a function in a “least recently used” cache. Arguments to
+the function are used to build a hash key, which is then mapped to the result. Subsequent
+calls with the same arguments will fetch the value from the cache instead of calling the
+function. The decorator also adds methods to the function to examine the state of the
+cache (`cache_info()`) and empty the cache (`cache_clear()`).
+ 
+`lru_cache()` 装饰器将函数包装在“最近最少使用”缓存中。 该函数的参数用于构建哈希键，然后将其映射到结果。
+具有相同参数的后续调用将从缓存中获取值，而不是调用该函数。 装饰器还向函数添加了检查缓存状态（`cache_info()`）和清空缓存（`cache_clear()`）的方法。
+
+> This example makes several calls to `expensive()` in a set of nested loops. The second
+time those calls are made with the same values, the results appear in the cache. When the
+cache is cleared and the loops are run again, the values must be recomputed.
+ 
+此示例在一组嵌套循环中多次调用 `expensive()`。 第二次使用相同的值进行这些调用时，结果出现在缓存中。
+当缓存被清除并再次运行循环时，必须重新计算这些值。
+
+```python
+# 3_7_functools_lru_cache.py
+import functools
+
+
+@functools.lru_cache()
+def expensive(a, b):
+    print('expensive({}, {})'.format(a, b))
+    return a * b
+
+MAX = 2
+
+print('First set of calls:')
+for i in range(MAX):
+    for j in range(MAX):
+        expensive(i, j)
+print(expensive.cache_info())
+
+print('\nSecond set of calls:')
+for i in range(MAX + 1):
+    for j in range(MAX + 1):
+        expensive(i, j)
+print(expensive.cache_info())
+
+print('\nClearing cache:')
+expensive.cache_clear()
+print(expensive.cache_info())
+
+print('\nThird set of calls:')
+for i in range(MAX):
+    for j in range(MAX):
+        expensive(i, j)
+print(expensive.cache_info())
+```
+
+
+```text
+First set of calls:
+expensive(0, 0)
+expensive(0, 1)
+expensive(1, 0)
+expensive(1, 1)
+CacheInfo(hits=0, misses=4, maxsize=128, currsize=4)
+
+Second set of calls:
+expensive(0, 2)
+expensive(1, 2)
+expensive(2, 0)
+expensive(2, 1)
+expensive(2, 2)
+CacheInfo(hits=4, misses=9, maxsize=128, currsize=9)
+
+Clearing cache:
+CacheInfo(hits=0, misses=0, maxsize=128, currsize=0)
+
+Third set of calls:
+expensive(0, 0)
+expensive(0, 1)
+expensive(1, 0)
+expensive(1, 1)
+CacheInfo(hits=0, misses=4, maxsize=128, currsize=4)
+
+Process finished with exit code 0
+
+```
+
+> To prevent the cache from growing without bounds in a long-running process, it is given
+a maximum size. The default is 128 entries, but that size can be changed for each cache
+using the `maxsize` argument.
+
+为了防止缓存在长时间运行的进程中无限增长，它被赋予了最大大小。 默认值为 128 个条目，但可以使用 `maxsize` 参数为每个缓存更改该大小。
