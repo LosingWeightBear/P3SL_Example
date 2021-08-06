@@ -745,3 +745,67 @@ a maximum size. The default is 128 entries, but that size can be changed for eac
 using the `maxsize` argument.
 
 为了防止缓存在长时间运行的进程中无限增长，它被赋予了最大大小。 默认值为 128 个条目，但可以使用 `maxsize` 参数为每个缓存更改该大小。
+
+> In this example, the cache size is set to 2 entries. When the third set of unique arguments
+(3,4) is used, the oldest item in the cache is dropped and replaced with the new
+result.
+
+在此示例中，缓存大小设置为 2 个条目。 当使用第三组唯一参数 (3,4) 时，缓存中最旧的项目将被删除并替换为新结果。
+
+```python
+import functools
+
+
+@functools.lru_cache(maxsize=2)
+def expensive(a, b):
+    print('called expensive({}, {})'.format(a, b))
+    return a * b
+
+
+def make_call(a, b):
+    print('({}, {})'.format(a, b), end=' ')
+    pre_hits = expensive.cache_info().hits
+    expensive(a, b)
+    post_hits = expensive.cache_info().hits
+    if post_hits > pre_hits:
+        print('cache hit')
+
+
+print('Establish the cache')
+make_call(1, 2)
+make_call(2, 3)
+
+print('\nUse cached items')
+make_call(1, 2)
+make_call(2, 3)
+
+print('\nCompute a new value, triggering cache expiration')
+make_call(3, 4)
+
+print('\nCache still contains one old item')
+make_call(2, 3)
+
+print('\nOldest item needs to be recomputed')
+make_call(1, 2)
+
+```
+
+```text
+Establish the cache
+(1, 2) called expensive(1, 2)
+(2, 3) called expensive(2, 3)
+
+Use cached items
+(1, 2) cache hit
+(2, 3) cache hit
+
+Compute a new value, triggering cache expiration
+(3, 4) called expensive(3, 4)
+
+Cache still contains one old item
+(2, 3) cache hit
+
+Oldest item needs to be recomputed
+(1, 2) called expensive(1, 2)
+
+```
