@@ -809,3 +809,51 @@ Oldest item needs to be recomputed
 (1, 2) called expensive(1, 2)
 
 ```
+
+> The keys for the cache managed by `lru_cache()` must be hashable, so all of the arguments
+to the function wrapped with the cache lookup must be hashable.
+
+`lru_cache()` 管理的缓存的键必须是可散列的，因此用缓存查找包装的函数的所有参数都必须是可散列的。
+
+> If an object that cannot be hashed is passed in to the function, a `TypeError` is raised.
+
+如果将无法散列的对象传递给函数，则会引发“TypeError”。
+
+```python
+# 3_10_functools_lru_cache_arguments.py
+import functools
+
+
+@functools.lru_cache(maxsize=2)
+def expensive(a, b):
+    print('called expensive({}, {})'.format(a, b))
+    return a * b
+
+
+def make_call(a, b):
+    print('({}, {})'.format(a, b), end=' ')
+    pre_hits = expensive.cache_info().hits
+    expensive(a, b)
+    post_hits = expensive.cache_info().hits
+    if post_hits > pre_hits:
+        print('cache hit')
+
+
+make_call(1, 2)
+try:
+    make_call([1], 2)
+except TypeError as err:
+    print('ERROR: {}'.format(err))
+
+try:
+    make_call(1, {'2': 'two'})
+except TypeError as err:
+    print('ERROR: {}'.format(err))
+
+```
+
+```text
+(1, 2) called expensive(1, 2)
+([1], 2) ERROR: unhashable type: 'list'
+(1, {'2': 'two'}) ERROR: unhashable type: 'dict'
+```
