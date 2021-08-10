@@ -857,3 +857,42 @@ except TypeError as err:
 ([1], 2) ERROR: unhashable type: 'list'
 (1, {'2': 'two'}) ERROR: unhashable type: 'dict'
 ```
+
+
+### 3.1.4 Reducing a Data Set
+
+> The `reduce()` function takes a callable and a sequence of data as input. It produces a
+single value as output based on invoking the callable with the values from the sequence and
+accumulating the resulting output.
+
+`reduce()` 函数将一个可调用对象和一个数据序列作为输入。它基于使用序列中的值调用可调用对象并累积结果输出来生成单个值作为输出。
+
+> This example adds up the numbers in the input sequence.
+
+本示例将输入序列中的数字相加。
+
+```python
+# 3_11_functools_reduce.py
+import functools
+
+
+def do_reduce(a, b):
+    print('do_reduce({}, {})'.format(a, b))
+    return a + b
+
+
+data = range(1, 5)
+print(data)
+result = functools.reduce(do_reduce, data)
+print('result: {}'.format(result))
+
+```
+
+
+```text
+range(1, 5)
+do_reduce(1, 2)
+do_reduce(3, 3)
+do_reduce(6, 4)
+result: 10
+```
