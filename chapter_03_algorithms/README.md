@@ -896,3 +896,36 @@ do_reduce(3, 3)
 do_reduce(6, 4)
 result: 10
 ```
+
+
+> The optional `initializer` argument is placed at the front of the sequence and processed
+along with the other items. This can be used to update a previously computed value with
+new inputs.
+
+可选的 `initializer` 参数放置在序列的前面，并与其他项一起处理。 这可用于使用新输入更新先前计算的值。
+
+```python
+# 3_12_functools_reduce_initializer.py
+import functools
+
+
+def do_reduce(a, b):
+    print('do_reduce({}, {})'.format(a, b))
+    return a + b
+
+
+data = range(1, 5)
+print(data)
+result = functools.reduce(do_reduce, data, 99)
+print('result: {}'.format(result))
+
+```
+
+```text
+range(1, 5)
+do_reduce(99, 1)
+do_reduce(100, 2)
+do_reduce(102, 3)
+do_reduce(105, 4)
+result: 109
+```
