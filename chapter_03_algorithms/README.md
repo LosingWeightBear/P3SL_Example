@@ -929,3 +929,48 @@ do_reduce(102, 3)
 do_reduce(105, 4)
 result: 109
 ```
+
+
+> Sequences with a single item automatically reduce to that value when no initializer is
+present. Empty lists generate an error, unless an initializer is provided.
+
+当没有初始值设定项时，具有单个项目的序列会自动减少到该值。除非提供初始化程序，否则空列表会产生错误。
+
+> Because the initializer argument serves as a default, but is also combined with the new
+values if the input sequence is not empty, it is important to consider carefully whether its
+use is appropriate. When it does not make sense to combine the default with new values, it
+is better to catch the `TypeError` rather than passing an initializer.
+
+因为初始化参数用作默认值，但如果输入序列不为空，它也会与新值组合，所以仔细考虑它的使用是否合适是很重要的。 
+当将默认值与新值结合起来没有意义时，最好捕获 `TypeError` 而不是传递初始值设定项。
+
+```python
+# 3_13_functools_reduce_short_sequences.py
+import functools
+
+
+def do_reduce(a, b):
+    print('do_reduce({}, {})'.format(a, b))
+    return a + b
+
+
+print('Single item in sequence:', functools.reduce(do_reduce, [1]))
+
+print('Single item in sequence with initializer:', functools.reduce(do_reduce, [1], 99))
+
+print('Empty sequence with initializer:', functools.reduce(do_reduce, [], 99))
+
+try:
+    print('Empty sequence:', functools.reduce(do_reduce, []))
+except TypeError as err:
+    print('ERROR: {}'.format(err))
+
+```
+
+```text
+Single item in sequence: 1
+do_reduce(99, 1)
+Single item in sequence with initializer: 100
+Empty sequence with initializer: 99
+ERROR: reduce() of empty sequence with no initial value
+```
