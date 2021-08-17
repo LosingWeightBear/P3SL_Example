@@ -974,3 +974,66 @@ Single item in sequence with initializer: 100
 Empty sequence with initializer: 99
 ERROR: reduce() of empty sequence with no initial value
 ```
+
+
+### 3.1.5 Generic Functions
+
+> In a dynamically typed language like Python, there is often a need to perform slightly
+different operations based on the type of an argument, especially when dealing with the
+difference between a list of items and a single item. It is simple enough to check the type
+of an argument directly, but in cases where the behavioral difference can be isolated into
+separate functions, `functools` provides the `singledispatch()` decorator to register a set
+of generic functions for automatic switching based on the type of the first argument to a
+function.
+
+在像 Python 这样的动态类型语言中，通常需要根据参数的类型执行稍微不同的操作，尤其是在处理项目列表和单个项目之间的差异时。
+直接检查参数的类型很简单，但是在行为差异可以隔离到单独的函数中的情况下，
+`functools` 提供了 `singledispatch()` 装饰器来注册一组通用函数，用于基于函数的第一个参数的类型。
+
+
+> The `register()` attribute of the new function serves as another decorator for registering
+alternative implementations. The first function wrapped with `singledispatch()` is the
+default implementation if no other type-specific function is found, as with the `float` case
+in this example.
+
+新函数的 `register()` 属性用作注册替代实现的另一个装饰器。
+如果没有找到其他特定于类型的函数，则用 `singledispatch()` 包装的第一个函数是默认实现，如本例中的 `float` 情况。
+
+```python
+# 3_14_functools_singledispatch.py
+import functools
+
+
+@functools.singledispatch
+def myfunc(arg):
+    print('default myfunc({!r})'.format(arg))
+
+
+@myfunc.register(int)
+def myfunc_int(arg):
+    print('myfunc_int({})'.format(arg))
+
+
+@myfunc.register(list)
+def myfunc_list(arg):
+    print('myfunc_list()')
+    for item in arg:
+        print(' {}'.format(item))
+
+
+myfunc('string argument')
+myfunc(1)
+myfunc(2.3)
+myfunc(['a', 'b', 'c'])
+
+```
+
+```text
+default myfunc('string argument')
+myfunc_int(1)
+default myfunc(2.3)
+myfunc_list()
+ a
+ b
+ c
+```
