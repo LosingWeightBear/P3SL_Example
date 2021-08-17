@@ -1037,3 +1037,81 @@ myfunc_list()
  b
  c
 ```
+
+> When no exact match is found for the type, the inheritance order is evaluated and the
+closest matching type is used.
+
+当没有找到完全匹配的类型时，将评估继承顺序并使用最接近的匹配类型。
+
+> In this example, classes D and E do not match exactly with any registered generic functions,
+and the function selected depends on the class hierarchy.
+
+在此示例中，类 D 和 E 与任何注册的泛型函数不完全匹配，所选函数取决于类继承结构。
+
+
+## 3.2 itertools: Iterator Functions
+
+
+
+```python
+# 3_15_functools_singledispatch_mro.py
+import functools
+
+
+class A:
+    pass
+
+
+class B(A):
+    pass
+
+
+class C(A):
+    pass
+
+
+class D(B):
+    pass
+
+
+class E(C, D):
+    pass
+
+
+@functools.singledispatch
+def myfunc(arg):
+    print('default myfunc({})'.format(arg.__class__.__name__))
+
+
+@myfunc.register(A)
+def myfunc_A(arg):
+    print('myfunc_A({})'.format(arg.__class__.__name__))
+
+
+@myfunc.register(B)
+def myfunc_B(arg):
+    print('myfunc_B({})'.format(arg.__class__.__name__))
+
+
+@myfunc.register(C)
+def myfunc_C(arg):
+    print('myfunc_C({})'.format(arg.__class__.__name__))
+
+
+myfunc(A())
+myfunc(B())
+myfunc(C())
+myfunc(D())
+myfunc(E())
+
+```
+
+```text
+myfunc_A(A)
+myfunc_B(B)
+myfunc_C(C)
+myfunc_B(D)
+myfunc_C(E)
+```
+
+## 3.2 itertools: Iterator Functions
