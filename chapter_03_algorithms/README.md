@@ -1115,3 +1115,255 @@ myfunc_C(E)
 ```
 
 ## 3.2 itertools: Iterator Functions
+
+> The `itertools` module includes a set of functions for working with sequence data sets. The
+functions provided are inspired by similar features of functional programming languages
+such as Clojure, Haskell, APL, and SML. They are intended to be fast and use memory efficiently. 
+They can also be hooked together to express more complicated iteration-based algorithms.
+
+`itertools` 模块包括一组用于处理序列数据集的函数。
+所提供的函数的灵感来自于函数式编程语言（例如 Clojure、Haskell、APL 和 SML）的类似特性。
+它们旨在快速并有效地使用内存。
+它们还可以连接在一起以表达更复杂的基于迭代的算法。
+
+> Iterator-based code offers better memory consumption characteristics than code that
+uses lists. Since data is not produced from the iterator until it is needed, all of the data
+does not need to be stored in memory at the same time. This “lazy” processing model can
+reduce swapping and other side effects of large data sets, improving performance.
+
+基于迭代器的代码比使用列表的代码提供更好的内存消耗特性。
+由于数据在需要之前不会从迭代器中产生，因此所有数据不需要同时存储在内存中。
+这种“惰性”处理模型可以减少大数据集的交换和其他副作用，从而提高性能。
+
+> In addition to the functions defined in `itertools`, the examples in this section rely on
+some of the built-in functions for iteration.
+
+除了 `itertools` 中定义的函数，本节中的示例依赖于一些内置函数进行迭代。
+
+
+### 3.2.1 Merging and Splitting Iterators
+
+> The `chain()` function takes several iterators as arguments and returns a single iterator that
+produces the contents of all of the inputs as though they came from a single iterator.
+
+`chain()` 函数将多个迭代器作为参数并返回一个迭代器，该迭代器生成所有输入的内容，就好像它们来自单个迭代器一样。
+
+> `chain()` makes it easy to process several sequences without constructing one large list.
+
+`chain()` 可以很容易地处理多个序列，而无需构建一个大列表。
+
+```python
+# 3_16_itertools_chain.py
+from itertools import *
+
+for i in chain([1, 2, 3], ['a', 'b', 'c']):
+    print(i, end=' ')
+print()
+```
+
+```text
+1 2 3 a b c
+```
+
+
+> If the iterables to be combined are not all known in advance, or if they need to be
+evaluated lazily, `chain.from_iterable()` can be used to construct the chain instead.
+
+如果要组合的可迭代对象不是事先知道的，或者需要懒惰地评估它们，则可以使用`chain.from_iterable()` 来构造链。
+
+
+```python
+# 3_17_itertools_chain_from_iterable.py
+from itertools import *
+
+
+def make_iterables_to_chain():
+    yield [1, 2, 3]
+    yield ['a', 'b', 'c']
+
+
+for i in chain.from_iterable(make_iterables_to_chain()):
+    print(i, end=' ')
+print()
+```
+
+```text
+1 2 3 a b c 
+
+```
+
+> The built-in function `zip()` returns an iterator that combines the elements of several
+iterators into tuples.
+
+内置函数 `zip()` 返回一个迭代器，它将多个迭代器的元素组合成元组。
+
+> As with the other functions in this module, the return value is an iterable object that
+produces values one at a time.
+
+与此模块中的其他函数一样，返回值是一个可迭代对象，一次生成一个值。
+
+```python
+# 3_18_itertools_zip.py
+for i in zip([1, 2, 3], ['a', 'b', 'c']):
+    print(i)
+```
+
+```text
+(1, 'a')
+(2, 'b')
+(3, 'c')
+```
+
+> `zip()` stops when the first input iterator is exhausted. To process all of the inputs, even if
+the iterators produce different numbers of values, use `zip_longest()`.
+
+zip()` 在第一个输入迭代器耗尽时（就短，长度最小的那个迭代器耗尽）停止。
+要处理所有输入，即使迭代器产生不同数量的值，也可以使用 `zip_longest()`。
+
+> By default, `zip_longest()` substitutes `None` for any missing values. Use the `fillvalue`
+argument to use a different substitute value.
+
+默认情况下，`zip_longest()` 将 `None` 替换为任何缺失值。
+使用 `fillvalue` 参数来使用不同的替代值。
+
+```python
+# 3_19_itertools_zip_longest.py
+from itertools import *
+
+r1 = range(3)
+r2 = range(2)
+
+print('zip stops early:')
+print(list(zip(r1, r2)))
+
+r1 = range(3)
+r2 = range(2)
+
+print('\nzip_longest processes all of the values:')
+print(list(zip_longest(r1, r2)))
+print(list(zip_longest(r2, r1)))
+
+```
+
+```text
+zip stops early:
+[(0, 0), (1, 1)]
+[(0, 0), (1, 1)]
+
+zip_longest processes all of the values:
+[(0, 0), (1, 1), (2, None)]
+[(0, 0), (1, 1), (None, 2)]
+```
+
+
+> The `islice()` function returns an iterator that returns selected items from the input
+iterator, by index.
+
+`islice()` 函数返回一个迭代器，该迭代器通过索引从输入迭代器中返回所选项目。
+
+> `islice()` takes the same arguments as the slice operator for lists: `start`, `stop`, and `step`.
+The start and step arguments are optional.
+
+`islice()` 与列表的切片操作符采用相同的参数：`start`、`stop` 和 `step`。 
+start 和 step 参数是可选的。
+
+```python
+# 3_20_itertools_islice.py
+from itertools import *
+
+print('Stop at 5:')
+for i in islice(range(100), 5):
+    print(i, end=' ')
+print('\n')
+
+print('Start at 5, Stop at 10:')
+for i in islice(range(100), 5, 10):
+    print(i, end=' ')
+print('\n')
+
+print('By tens to 100:')
+for i in islice(range(100), 0, 100, 10):
+    print(i, end=' ')
+print('\n')
+
+```
+
+```text
+Stop at 5:
+0 1 2 3 4 
+
+Start at 5, Stop at 10:
+5 6 7 8 9 
+
+By tens to 100:
+0 10 20 30 40 50 60 70 80 90 
+```
+
+> The `tee()` function returns several independent iterators (defaults to 2) based on a single
+original input.
+
+`tee()` 函数基于单个原始输入返回多个独立的迭代器（默认为 2）。
+
+> `tee()` has semantics similar to the Unix `tee` utility, which repeats the values it reads from
+its input and writes them to a named file and standard output. The iterators returned by
+`tee()` can be used to feed the same set of data into multiple algorithms to be processed in
+parallel.
+
+`tee()` 的语义类似于 Unix 的 `tee` 实用程序，它重复从其输入读取的值并将它们写入命名文件和标准输出。 
+`tee()` 返回的迭代器可用于将同一组数据提供给多个算法进行并行处理。
+
+```python
+# 3_21_itertools_tee.py
+from itertools import *
+
+r = islice(count(), 5)
+i1, i2 = tee(r)
+print('i1:', list(i1))
+print('i2:', list(i2))
+```
+
+
+```text
+i1: [0, 1, 2, 3, 4]
+i2: [0, 1, 2, 3, 4]
+```
+
+
+> The new iterators created by `tee()` share their input, so the original iterator should not be
+used after the new ones are created.
+
+`tee()` 创建的新迭代器共享它们的输入，因此在创建新迭代器后不应使用原始迭代器。
+
+> If values are consumed from the original input, the new iterators will not produce those
+values.
+
+如果从原始输入中使用值，则新迭代器将不会生成这些值。(因为新创建的迭代器共享原始迭代器，原始迭代器的使用会消耗新创建的迭代器)
+
+```python
+# 3_22_itertools_tee_error.py
+from itertools import *
+
+r = islice(count(), 5)
+i1, i2 = tee(r)
+
+print('r:', end=' ')
+for i in r:
+    print(i, end=' ')
+    if i > 1:
+        break
+print()
+
+print('i1:', list(i1))
+print('i2:', list(i2))
+
+```
+
+```text
+r: 0 1 2 
+i1: [3, 4]
+i2: [3, 4]
+```
+
+3.2.2 Converting Inputs
+输入转换
+
