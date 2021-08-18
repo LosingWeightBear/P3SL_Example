@@ -1631,3 +1631,142 @@ for i in map(lambda x, y: (x, y, x * y), repeat(2), range(5)):
 ```
 
 ### 3.2.4 Filtering
+
+> The `dropwhile()` function returns an iterator that produces elements of the input iterator
+after a condition becomes false for the first time.
+
+`dropwhile()` 函数返回一个迭代器，该迭代器在条件第一次变为 false 后生成输入迭代器的元素。
+
+> `dropwhile()` does not filter every item of the input. After the condition is false the first
+time, all of the remaining items in the input are returned.
+
+```python
+# 3_31_itertools_dropwhile.py
+from itertools import *
+
+
+def should_drop(x):
+    print('Testing:', x)
+    return x < 1
+
+
+for i in dropwhile(should_drop, [-1, 0, 1, 2, -2]):
+    print('Yielding:', i)
+```
+
+```text
+Testing: -1
+Testing: 0
+Testing: 1
+Yielding: 1
+Yielding: 2
+Yielding: -2
+```
+
+
+> The opposite of `dropwhile()` is `takewhile()`. It returns an iterator that itself returns
+items from the input iterator as long as the test function returns true.
+
+`dropwhile()` 的反面是 `takewhile()`。
+只要测试函数返回true，它就会返回一个迭代器，该迭代器本身从输入迭代器返回项目。
+
+> As soon as `should_take()` returns false, `takewhile()` stops processing the input.
+
+一旦 `should_take()` 返回 false，`takewhile()` 就会停止处理输入。
+
+```python
+# 3_32_itertools_takewhile.py
+from itertools import *
+
+
+def should_take(x):
+    print('Testing:', x)
+    return x < 2
+
+
+for i in takewhile(should_take, [-1, 0, 1, 2, -2]):
+    print('Yielding:', i)
+
+```
+
+```text
+Testing: -1
+Yielding: -1
+Testing: 0
+Yielding: 0
+Testing: 1
+Yielding: 1
+Testing: 2
+```
+
+
+> The built-in function `filter()` returns an iterator that includes only items for which
+the test function returns true.
+
+内置函数 `filter()` 返回一个迭代器，它只包含测试函数返回 true 的项目。
+
+> `filter()` differs from `dropwhile()` and `takewhile()` in that every item is tested before it is
+returned.
+
+`filter()` 与 `dropwhile()` 和 `takewhile()` 的不同之处在于每个项目在返回之前都经过测试。
+
+这里3_33的代码不需要import模块itertools，`filter()`函数来自builtin.py
+
+```python
+# 3_33_itertools_filter.py
+def check_item(x):
+    print('Testing:', x)
+    return x < 1
+
+
+for i in filter(check_item, [-1, 0, 1, 2, -2]):
+    print('Yielding:', i)
+```
+
+```text
+Testing: -1
+Yielding: -1
+Testing: 0
+Yielding: 0
+Testing: 1
+Testing: 2
+Testing: -2
+Yielding: -2
+```
+
+
+> `filterfalse()` returns an iterator that includes only items where the test function
+returns false.
+
+`filterfalse()` 返回一个迭代器，它只包含测试函数返回 false 的项目。
+
+
+> The test expression in `check_item()` is the same, so the results in this example with
+`filterfalse()` are the opposite of the results from the previous example.
+
+`check_item()` 中的测试表达式是相同的，所以这个例子中带有 `filterfalse()` 的结果与上一个例子的结果相反。
+
+```python
+# 3_34_itertools_filterfalse.py
+from itertools import *
+
+
+def check_item(x):
+    print('Testing:', x)
+    return x < 1
+
+
+for i in filterfalse(check_item, [-1, 0, 1, 2, -2]):
+    print('Yielding:', i)
+
+```
+
+```text
+Testing: -1
+Testing: 0
+Testing: 1
+Yielding: 1
+Testing: 2
+Yielding: 2
+Testing: -2
+```
