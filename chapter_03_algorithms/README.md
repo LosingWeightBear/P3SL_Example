@@ -583,7 +583,7 @@ which is used to determine the position in the final sequence.
 
 > Normally `cmp_to_key()` would be used directly, but in this example an extra wrapper
 function is introduced to print out more information as the key function is being called.
- 
+
 通常会直接使用 `cmp_to_key()`，但在这个例子中，引入了一个额外的包装函数来在调用 key 函数时打印出更多信息。
 
 > The output shows that `sorted()` starts by calling `get_key_wrapper()` for each item
@@ -663,14 +663,14 @@ the function are used to build a hash key, which is then mapped to the result. S
 calls with the same arguments will fetch the value from the cache instead of calling the
 function. The decorator also adds methods to the function to examine the state of the
 cache (`cache_info()`) and empty the cache (`cache_clear()`).
- 
+
 `lru_cache()` 装饰器将函数包装在“最近最少使用”缓存中。 该函数的参数用于构建哈希键，然后将其映射到结果。
 具有相同参数的后续调用将从缓存中获取值，而不是调用该函数。 装饰器还向函数添加了检查缓存状态（`cache_info()`）和清空缓存（`cache_clear()`）的方法。
 
 > This example makes several calls to `expensive()` in a set of nested loops. The second
 time those calls are made with the same values, the results appear in the cache. When the
 cache is cleared and the loops are run again, the values must be recomputed.
- 
+
 此示例在一组嵌套循环中多次调用 `expensive()`。 第二次使用相同的值进行这些调用时，结果出现在缓存中。
 当缓存被清除并再次运行循环时，必须重新计算这些值。
 
@@ -1367,3 +1367,154 @@ i2: [3, 4]
 3.2.2 Converting Inputs
 输入转换
 
+> The built-in `map()` function returns an iterator that calls a function on the values in the
+> input iterators, and returns the results. It stops when any input iterator is exhausted.
+
+内置的 `map()` 函数返回一个迭代器，该迭代器对输入迭代器中的值调用函数，并返回结果。当任何输入迭代器用完时它就会停止。
+
+> In the first example, the lambda function multiplies the input values by 2. In the second 
+example, the lambda function multiplies two arguments, taken from separate iterators, and
+returns a tuple with the original arguments and the computed value. The third example
+stops after producing two tuples because the second range is exhausted.
+
+在第一个示例中，lambda 函数将输入值乘以 2。在第二个示例中，lambda 函数将取自不同迭代器的两个参数相乘，并返回一个包含原始参数和计算值的元组。
+第三个示例在生成两个元组后停止，因为第二个范围已用完
+
+
+```python
+# 3_23_itertools_map.py
+def times_two(x):
+    return 2 * x
+
+
+def multiply(x, y):
+    return x, y, x * y
+
+
+print('Doubles:')
+for i in map(times_two, range(5)):
+    print(i)
+
+print('\nMultiples:')
+r1 = range(5)
+r2 = range(5, 10)
+for i in map(multiply, r1, r2):
+    print('{:d} * {:d} = {:d}'.format(*i))
+
+print('\nStopping:')
+r1 = range(5)
+r2 = range(2)
+for i in map(multiply, r1, r2):
+    print(i)
+
+```
+
+
+```text
+Doubles:
+0
+2
+4
+6
+8
+
+Multiples:
+0 * 5 = 0
+1 * 6 = 6
+2 * 7 = 14
+3 * 8 = 24
+4 * 9 = 36
+
+Stopping:
+(0, 0, 0)
+(1, 1, 1)
+```
+
+
+> The `starmap()` function is similar to `map()`, but instead of constructing a tuple from
+multiple iterators, it splits up the items in a single iterator as arguments to the mapping
+function using the * syntax.
+
+`starmap()` 函数类似于 `map()`，但它不是从多个迭代器构造一个元组，而是使用 * 语法将单个迭代器中的项目拆分为映射函数的参数。
+
+> Where the mapping function to `map()` is called `f(i1,i2)`, the mapping function passed to
+`starmap()` is called `f(*i)`.
+
+其中映射到`map()`的函数称为`f(i1,i2)`，传递给`starmap()`的映射函数称为`f(*i)`。
+
+```python
+# 3_24_itertools_starmap.py
+from itertools import *
+
+values = [(0, 5), (1, 6), (2, 7), (3, 8), (4, 9)]
+
+for i in starmap(lambda x, y: (x, y, x * y), values):
+    print('{} * {} = {}'.format(*i))
+
+```
+
+```text
+0 * 5 = 0
+1 * 6 = 6
+2 * 7 = 14
+3 * 8 = 24
+4 * 9 = 36
+```
+
+### 3.2.3 Producing New Values
+
+> The `count()` function returns an iterator that produces consecutive integers, indefinitely.
+The first number can be passed as an argument (the default is zero). There is no upper
+bound argument (see the built-in `range()` for more control over the result set).
+
+`count()` 函数返回一个迭代器，它无限期地产生连续的整数。 第一个数字可以作为参数传递（默认为零）。
+没有上限参数（请参阅内置 `range()` 以获取对结果集的更多控制）。
+
+> This example stops because the list argument is consumed.
+
+此示例停止，因为列表参数已被消耗。
+
+```python
+# 3_25_itertools_count.py
+from itertools import *
+
+for i in zip(count(1), ['a', 'b', 'c']):
+    print(i)
+
+```
+
+
+```text
+(1, 'a')
+(2, 'b')
+(3, 'c')
+```
+
+
+> The start and step arguments to `count()` can be any numerical values that can be added
+together.
+
+`count()` 的 start 和 step 参数可以是任何可以相加的数值。
+
+> In this example, the start point and steps are `Fraction` objects from the `fraction` module
+
+在这个例子中，起点和步骤是来自分数模块的`fraction`对象。
+
+```python
+# 3_26_itertools_count_step.py
+import fractions
+from itertools import *
+
+start = fractions.Fraction(1, 3)
+step = fractions.Fraction(1, 3)
+
+for i in zip(count(start, step), ['a', 'b', 'c']):
+    print('{}: {}'.format(*i))
+
+```
+
+```text
+1/3: a
+2/3: b
+1: c
+```
