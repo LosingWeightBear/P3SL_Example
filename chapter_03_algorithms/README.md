@@ -1518,3 +1518,116 @@ for i in zip(count(start, step), ['a', 'b', 'c']):
 2/3: b
 1: c
 ```
+
+
+> The `cycle()` function returns an iterator that repeats the contents of the arguments it
+is given indefinitely. Because it has to remember the entire contents of the input iterator,
+it may consume quite a bit of memory if the iterator is long.
+
+`cycle()` 函数返回一个迭代器，它无限期地重复给定参数的内容。
+因为它必须记住输入迭代器的全部内容，如果迭代器很长，它可能会消耗相当多的内存。
+
+> A counter variable is used to break out of the loop after a few cycles in this example.
+
+在本例中，计数器变量用于在几个周期后跳出循环。
+
+```python
+# 3_27_itertools_cycle.py
+from itertools import *
+
+for i in zip(range(7), cycle(['a', 'b', 'c'])):
+    print(i)
+
+```
+
+```text
+(0, 'a')
+(1, 'b')
+(2, 'c')
+(3, 'a')
+(4, 'b')
+(5, 'c')
+(6, 'a')
+```
+
+> The `repeat()` function returns an iterator that produces the same value each time it is
+accessed.
+
+`repeat()` 函数返回一个迭代器，每次访问都会产生相同的值
+
+> The iterator returned by `repeat()` keeps returning data forever, unless the optional `times`
+argument is provided to limit it.
+
+`repeat()` 返回的迭代器会永远返回数据，除非提供了可选的 `times` 参数来限制它。
+
+```python
+# 3_28_itertools_repeat.py
+from itertools import *
+
+for i in repeat('over-and-over', 5):
+    print(i)
+
+```
+
+```text
+over-and-over
+over-and-over
+over-and-over
+over-and-over
+over-and-over
+```
+
+> It is useful to combine `repeat()` with `zip()` or `map()` when invariant values should be
+included with the values from the other iterators.
+
+当不变值应该包含在其他迭代器的值中时，将 `repeat()` 与 `zip()` 或 `map()` 结合起来很有用。
+
+> A counter value is combined with the constant returned by `repeat()` in this example.
+ 
+在此示例中，计数器值与`repeat()`返回的常量相结合。
+
+```python
+from itertools import *
+
+for i, s in zip(count(), repeat('over-and-over', 5)):
+    print(i, s)
+
+```
+
+```text
+0 over-and-over
+1 over-and-over
+2 over-and-over
+3 over-and-over
+4 over-and-over
+
+```
+
+
+> This example uses `map()` to multiply the numbers in the range 0 through 4 by 2.
+
+此示例使用 `map()` 将 0 到 4 范围内的数字乘以 2。
+
+> The `repeat()` iterator does not need to be explicitly limited, since `map()` stops processing
+when any of its inputs ends, and the `range()` returns only five elements.
+
+`repeat()` 迭代器不需要明确限制，因为 `map()` 在其任何输入结束时停止处理，并且 `range()` 仅返回五个元素。
+
+```python
+# 3_30_itertools_repeat_map.py
+from itertools import *
+
+for i in map(lambda x, y: (x, y, x * y), repeat(2), range(5)):
+    print('{:d} * {:d} = {:d}'.format(*i))
+
+```
+
+```text
+2 * 0 = 0
+2 * 1 = 2
+2 * 2 = 4
+2 * 3 = 6
+2 * 4 = 8
+```
+
+### 3.2.4 Filtering
