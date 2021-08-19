@@ -1710,7 +1710,7 @@ returned.
 
 `filter()` 与 `dropwhile()` 和 `takewhile()` 的不同之处在于每个项目在返回之前都经过测试。
 
-这里3_33的代码不需要import模块itertools，`filter()`函数来自builtin.py
+这里3_33的代码不需要import模块itertools，与之前来自itertools.py的函数不同，`filter()`函数来自builtins.py
 
 ```python
 # 3_33_itertools_filter.py
@@ -1770,3 +1770,37 @@ Testing: 2
 Yielding: 2
 Testing: -2
 ```
+
+
+> `compress()` offers another way to filter the contents of an iterable. Instead of calling a
+function, it uses the values in another iterable to indicate when to accept a value and when
+to ignore it.
+
+`compress()` 提供了另一种过滤可迭代内容的方法。
+它不是调用函数，而是使用另一个可迭代对象中的值来指示何时接受值以及何时忽略它。
+
+> The first argument is the data iterable to process. The second argument is a selector iterable
+that produces boolean values indicating which elements to take from the data input (a true
+value causes the value to be produced; a false value causes it to be ignored).
+
+第一个参数是可迭代处理的数据。
+第二个参数是一个可迭代的选择器，它产生布尔值，指示从数据输入中获取哪些元素（真值导致产生该值；假值导致它被忽略）。
+
+
+```python
+# 3_35_itertools_compress.py
+from itertools import *
+
+every_third = cycle([False, False, True])
+data = range(1, 10)
+
+for i in compress(data, every_third):
+    print(i, end=' ')
+print()
+```
+
+```text
+3 6 9
+
+```
+
