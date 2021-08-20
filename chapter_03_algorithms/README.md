@@ -1804,3 +1804,472 @@ print()
 
 ```
 
+### 3.2.5 Grouping Data
+
+> The `groupby()` function returns an iterator that produces sets of values organized by a
+common key. This example illustrates grouping of related values based on an attribute.
+
+`groupby()` 函数返回一个迭代器，该迭代器生成由公共键组织的值集。
+此示例说明了基于属性对相关值进行分组。
+
+> The input sequence needs to be sorted on the key value so that the groupings will work
+out as expected.
+
+输入序列需要根据键值进行排序，以便按预期进行分组。
+
+```python
+# 3_36_itertools_groupby_seq.py
+import functools
+from itertools import *
+import operator
+import pprint
+
+
+@functools.total_ordering
+class Point:
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return '({}, {})'.format(self.x, self.y)
+
+    def __eq__(self, other):
+        return (self.x, self.y) == (other.x, other.y)
+
+    def __gt__(self, other):
+        return (self.x, self.y) > (other.x, other.y)
+
+
+# Create a data set of Point instances.
+data = list(map(Point, cycle(islice(count(), 3)), islice(count(), 7)))
+print('Data:')
+pprint.pprint(data, width=35)
+print()
+
+# Try to group the unsorted data based on X values.
+print('Grouped, unsorted:')
+for k, g in groupby(data, operator.attrgetter('x')):
+    print(k, list(g))
+print()
+
+# Sort the data.
+data.sort()
+print('Sorted:')
+pprint.pprint(data, width=35)
+print()
+
+# Group the sorted data based on X values.
+print('Grouped, sorted:')
+for k, g in groupby(data, operator.attrgetter('x')):
+    print(k, list(g))
+print()
+
+```
+
+```text
+Data:
+[(0, 0),
+ (1, 1),
+ (2, 2),
+ (0, 3),
+ (1, 4),
+ (2, 5),
+ (0, 6)]
+
+Grouped, unsorted:
+0 [(0, 0)]
+1 [(1, 1)]
+2 [(2, 2)]
+0 [(0, 3)]
+1 [(1, 4)]
+2 [(2, 5)]
+0 [(0, 6)]
+
+Sorted:
+[(0, 0),
+ (0, 3),
+ (0, 6),
+ (1, 1),
+ (1, 4),
+ (2, 2),
+ (2, 5)]
+
+Grouped, sorted:
+0 [(0, 0), (0, 3), (0, 6)]
+1 [(1, 1), (1, 4)]
+2 [(2, 2), (2, 5)]
+
+
+Process finished with exit code 0
+
+```
+
+
+### 3.2.6 Combining Inputs
+
+> The `accumulate()` function processes the input iterable, passing the nth and n+1st item
+to a function and producing the return value instead of either input. The default function
+used to combine the two values adds them, so `accumulate()` can be used to produce the
+cumulative sum of a series of numerical inputs.
+
+
+`accumulate()` 函数处理输入可迭代对象，将第 n 项和第 n+1 项传递给函数并生成返回值而不是任一输入。
+用于组合两个值的默认函数将它们相加，因此 `accumulate()` 可用于生成一系列数字输入的累积总和。
+
+
+> When used with a sequence of non-integer values, the results depend on what it means to
+“add” two items together. The second example in this script shows that when `accumulate()`
+receives a string input, each response is a progressively longer prefix of that string.
+
+当与一系列非整数值一起使用时，结果取决于将两个项目“相加”在一起的含义。
+此脚本中的第二个示例显示，当 `accumulate()` 接收字符串输入时，每个响应都是该字符串的逐渐变长的前缀。
+
+```python
+# 3_37_itertools_accumulate.py
+from itertools import *
+
+print(list(accumulate(range(5))))
+print(list(accumulate('abcde')))
+
+```
+
+```text
+[0, 1, 3, 6, 10]
+['a', 'ab', 'abc', 'abcd', 'abcde']
+
+```
+
+> `accumulate()` may be combined with any other function that takes two input values to
+achieve different results.
+
+`accumulate()` 可以与任何其他需要两个输入值的函数结合使用以获得不同的结果。
+
+> This example combines the string values in a way that makes a series of (nonsensical)
+palindromes. Each step of the way when `f()` is called, it prints the input values passed to
+it by `accumulate()`.
+
+此示例以形成一系列（无意义的）回文的方式组合字符串值。
+当`f()` 被调用时，每一步都会打印`accumulate()` 传递给它的输入值。
+
+
+```python
+# 3_38_itertools_accumulate_custom.py
+from itertools import *
+
+
+def f(a, b):
+    print(a, b)
+    return b + a + b
+
+
+print(list(accumulate('abcde', f)))
+
+```
+
+```text
+a b
+bab c
+cbabc d
+dcbabcd e
+['a', 'bab', 'cbabc', 'dcbabcd', 'edcbabcde']
+
+```
+
+> Nested `for` loops that iterate over multiple sequences can often be replaced with
+`product()`, which produces a single iterable whose values are the Cartesian product of the
+set of input values.
+
+迭代多个序列的嵌套 `for` 循环通常可以替换为 `product()`，它生成一个可迭代对象，其值是输入值集的笛卡尔积
+
+
+> The values produced by `product()` are tuples, with the members taken from each of
+the iterables passed in as arguments in the order they are passed. The first tuple returned
+includes the first value from each iterable. The last iterable passed to `product()` is processed
+first, followed by the next-to-last, and so on. The result is that the return values are in order
+based on the first iterable, then the next iterable, and so on.
+In this example, the cards are ordered first by value and then by suit.
+
+`product()` 产生的值是元组，其成员从作为参数传入的每个可迭代对象中获取，并按照它们的传递顺序进行。
+返回的第一个元组包含每个可迭代对象的第一个值。
+传递给 `product()` 的最后一个可迭代对象首先被处理，然后是倒数第二个，依此类推。
+结果是返回值按第一个可迭代对象的顺序排列，然后是下一个可迭代对象，依此类推。
+
+在此示例中，卡片首先按价值排序，然后按花色排序。
+
+```python
+# 3_39_itertools_product.py
+from itertools import *
+import pprint
+
+FACE_CARDS = ('J', 'Q', 'K', 'A')
+SUITS = ('H', 'D', 'C', 'S')
+
+DECK = list(
+    product(
+        chain(range(2, 11), FACE_CARDS),
+        SUITS,
+    )
+)
+
+for card in DECK:
+    print('{:>2}{}'.format(*card), end=' ')
+    if card[1] == SUITS[-1]:
+        print()
+
+```
+
+```text
+ 2H  2D  2C  2S 
+ 3H  3D  3C  3S 
+ 4H  4D  4C  4S 
+ 5H  5D  5C  5S 
+ 6H  6D  6C  6S 
+ 7H  7D  7C  7S 
+ 8H  8D  8C  8S 
+ 9H  9D  9C  9S 
+10H 10D 10C 10S 
+ JH  JD  JC  JS 
+ QH  QD  QC  QS 
+ KH  KD  KC  KS 
+ AH  AD  AC  AS 
+
+```
+
+
+> To change the order of the cards, change the order of the arguments to `product()`.
+
+要更改卡片的顺序，改变`product()`的参数的顺序 。
+
+
+> The print loop in this example looks for an ace card, instead of the spade suit, and then
+adds a newline to break up the output.
+
+此示例中的打印循环查找 ace 卡，而不是黑桃花色，然后添加换行符以拆分输出。
+
+```python
+# 3_40_itertools_product_ordering.py
+from itertools import *
+import pprint
+
+FACE_CARDS = ('J', 'Q', 'K', 'A')
+SUITS = ('H', 'D', 'C', 'S')
+
+DECK = list(
+    product(
+        SUITS,
+        chain(range(2, 11), FACE_CARDS),
+    )
+)
+
+for card in DECK:
+    print('{:>2}{}'.format(card[1], card[0]), end=' ')
+    if card[1] == FACE_CARDS[-1]:
+        print()
+
+```
+
+
+```text
+ 2H  3H  4H  5H  6H  7H  8H  9H 10H  JH  QH  KH  AH 
+ 2D  3D  4D  5D  6D  7D  8D  9D 10D  JD  QD  KD  AD 
+ 2C  3C  4C  5C  6C  7C  8C  9C 10C  JC  QC  KC  AC 
+ 2S  3S  4S  5S  6S  7S  8S  9S 10S  JS  QS  KS  AS 
+ 
+```
+
+
+> To compute the product of a sequence with itself, specify how many times the input should
+be repeated.
+
+要计算序列与其自身的乘积，请指定应重复输入的次数。
+
+> Since repeating a single iterable is like passing the same iterable multiple times, each tuple
+produced by `product()` will contain a number of items equal to the repeat counter.
+
+由于重复单个迭代就像多次传递相同的迭代，“product()”生成的每个元组将包含与重复计数器相等的项目数。
+
+```python
+# 3_41_itertools_product_repeat.py
+from itertools import *
+
+
+def show(iterable):
+    for i, item in enumerate(iterable, 1):
+        print(item, end=' ')
+        if (i % 3) == 0:
+            print()
+    print()
+
+
+print('Repeat 2:\n')
+show(list(product(range(3), repeat=2)))
+
+print('Repeat 3:\n')
+show(list(product(range(3), repeat=3)))
+
+```
+
+```text
+Repeat 2:
+
+(0, 0) (0, 1) (0, 2) 
+(1, 0) (1, 1) (1, 2) 
+(2, 0) (2, 1) (2, 2) 
+
+Repeat 3:
+
+(0, 0, 0) (0, 0, 1) (0, 0, 2) 
+(0, 1, 0) (0, 1, 1) (0, 1, 2) 
+(0, 2, 0) (0, 2, 1) (0, 2, 2) 
+(1, 0, 0) (1, 0, 1) (1, 0, 2) 
+(1, 1, 0) (1, 1, 1) (1, 1, 2) 
+(1, 2, 0) (1, 2, 1) (1, 2, 2) 
+(2, 0, 0) (2, 0, 1) (2, 0, 2) 
+(2, 1, 0) (2, 1, 1) (2, 1, 2) 
+(2, 2, 0) (2, 2, 1) (2, 2, 2) 
+
+```
+
+
+> The `permutations()` function produces items from the input iterable combined in the
+possible permutations of the given length. It defaults to producing the full set of all permutations.
+
+`permutations()` 函数从输入迭代中生成项目，该输入迭代组合在给定长度的可能排列中。
+它默认生成所有排列的完整集合。
+
+> Use the `r` argument to limit the length and number of the individual permutations returned.
+
+使用 `r` 参数来限制返回的单个排列的长度和数量。
+
+```python
+# 3_42_itertools_permutations.py
+from itertools import *
+
+
+def show(iterable):
+    first = None
+    for i, item in enumerate(iterable, 1):
+        if first != item[0]:
+            if first is not None:
+                print()
+            first = item[0]
+        print(''.join(item), end=' ')
+    print()
+
+
+print('All permutations:\n')
+show(permutations('abcd'))
+
+print('\nPairs:\n')
+show(permutations('abcd', r=2))
+
+```
+
+
+```text
+All permutations:
+
+abcd abdc acbd acdb adbc adcb 
+bacd badc bcad bcda bdac bdca 
+cabd cadb cbad cbda cdab cdba 
+dabc dacb dbac dbca dcab dcba 
+
+Pairs:
+
+ab ac ad 
+ba bc bd 
+ca cb cd 
+da db dc 
+
+```
+
+
+> To limit the values to unique combinations rather than permutations, use
+`combinations()`. As long as the members of the input are unique, the output will not
+include any repeated values.
+
+要将值限制为唯一组合而不是排列，请使用`combinations()`。
+只要输入的成员是唯一的，输出就不会包含任何重复的值。
+
+> Unlike with permutations, the `r` argument to `combinations()` is required.
+
+与排列不同，`combinations()` 的 `r` 参数是必需的。
+
+```python
+# 3_43_itertools_combinations.py
+from itertools import *
+
+
+def show(iterable):
+    first = None
+    for i, item in enumerate(iterable, 1):
+        if first != item[0]:
+            if first is not None:
+                print()
+            first = item[0]
+        print(''.join(item), end=' ')
+    print()
+
+
+print('Unique pairs:\n')
+show(combinations('abcd', r=2))
+
+```
+
+```text
+Unique pairs:
+
+ab ac ad 
+bc bd 
+cd 
+
+```
+
+
+> While `combinations()` does not repeat individual input elements, sometimes it is useful
+to consider combinations that do include repeated elements. For those cases, use
+`combinations_with_replacement()`.
+
+虽然`combinations()` 不会重复单个输入元素，但有时考虑包含重复元素的组合是有用的。
+对于这些情况，请使用`combinations_with_replacement()`。
+
+> In this output, each input item is paired with itself as well as all of the other members of
+the input sequence.
+
+在此输出中，每个输入项与其自身以及输入序列的所有其他成员配对。
+
+```python
+# 3_44_itertools_combinations_with_replacement.py
+from itertools import *
+
+
+def show(iterable):
+    first = None
+    for i, item in enumerate(iterable, 1):
+        if first != item[0]:
+            if first is not None:
+                print()
+            first = item[0]
+        print(''.join(item), end=' ')
+    print()
+
+
+print('Unique pairs:\n')
+show(combinations_with_replacement('abcd', r=2))
+
+```
+
+```text
+Unique pairs:
+
+aa ab ac ad 
+bb bc bd 
+cc cd 
+dd 
+
+```
+
+
+
