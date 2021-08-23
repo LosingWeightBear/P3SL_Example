@@ -2536,3 +2536,222 @@ Destructive:
  delitem(a, slice(1, 3)): [1]
 
 ```
+
+
+
+### 3.3.5 In-Place Operators
+
+> In addition to the standard operators, many types of objects support “in-place” modification
+through special operators such as +=. Equivalent functions are available for in-place
+modifications as well.
+
+除了标准运算符之外，许多类型的对象都支持通过特殊运算符（例如 +=）进行“就地”修改。
+等效函数也可用于就地修改。
+
+> These examples demonstrate just a few of the functions. Refer to the standard library
+documentation for complete details.
+
+这些示例仅演示了其中的几个功能。
+有关完整的详细信息，请参阅标准库文档。
+
+
+```python
+# 3_49_operator_inplace.py
+from operator import *
+
+a = -1
+b = 5.0
+c = [1, 2, 3]
+d = ['a', 'b', 'c']
+print('a =', a)
+print('b =', b)
+print('c =', c)
+print('d =', d)
+print()
+
+a = iadd(a, b)
+print('a = iadd(a, b) =>', a)
+print()
+
+c = iconcat(c, d)
+print('c = iconcat(c, d) =>', c)
+```
+
+
+```text
+a = -1
+b = 5.0
+c = [1, 2, 3]
+d = ['a', 'b', 'c']
+
+a = iadd(a, b) => 4.0
+
+c = iconcat(c, d) => [1, 2, 3, 'a', 'b', 'c']
+
+```
+
+
+### 3.3.6 Attribute and Item "Getters"
+
+> One of the most unusual features of the `operator` module is the concept of getters. These
+callable objects are constructed at runtime and retrieve attributes of objects or contents from
+sequences. Getters are especially useful when working with iterators or generator sequences,
+as they incur less overhead than a `lambda` or Python function.
+
+`operator` 模块最不寻常的特性之一是 getter 的概念。
+这些可调用对象是在运行时构造的，并从序列中检索对象或内容的属性。
+Getter 在使用迭代器或生成器序列时特别有用，因为它们比 `lambda` 或 Python 函数产生更少的开销。
+
+> Attribute getters work like `lambda x,n='attrname': getattr(x,n):`
+
+
+```python
+# 3_50_operator_attrgetter.py
+from operator import *
+
+
+class MyObj:
+    """example class for attrgetter"""
+
+    def __init__(self, arg):
+        super().__init__()
+        self.arg = arg
+
+    def __repr__(self):
+        return 'MyObj({})'.format(self.arg)
+
+
+l = [MyObj(i) for i in range(5)]
+print('objects :', l)
+# Extract the 'arg' value from each object.
+g = attrgetter('arg')
+vals = [g(i) for i in l]
+print('arg values:', vals)
+# Sort using arg.
+l.reverse()
+print('reversed :', l)
+print('sorted :', sorted(l, key=g))
+
+
+```
+
+
+```text
+objects : [MyObj(0), MyObj(1), MyObj(2), MyObj(3), MyObj(4)]
+arg values: [0, 1, 2, 3, 4]
+reversed : [MyObj(4), MyObj(3), MyObj(2), MyObj(1), MyObj(0)]
+sorted : [MyObj(0), MyObj(1), MyObj(2), MyObj(3), MyObj(4)]
+```
+
+
+> Item getters work like `lambda x,y=5: x[y]:`
+
+
+> Item getters work with mappings as well as sequences.
+
+可以处理映射和序列
+
+
+```python
+# 3_51_operator_itemgetter.py
+from operator import *
+
+l = [dict(val=-1 * i) for i in range(4)]
+print('Dictionaries:')
+print(' original:', l)
+g = itemgetter('val')
+vals = [g(i) for i in l]
+print(' values:', vals)
+print(' sorted:', sorted(l, key=g))
+
+print
+l = [(i, i * -2) for i in range(4)]
+print('\nTuples:')
+print(' original:', l)
+g = itemgetter(1)
+vals = [g(i) for i in l]
+print(' values:', vals)
+print(' sorted:', sorted(l, key=g))
+
+```
+
+```text
+Dictionaries:
+ original: [{'val': 0}, {'val': -1}, {'val': -2}, {'val': -3}]
+ values: [0, -1, -2, -3]
+ sorted: [{'val': -3}, {'val': -2}, {'val': -1}, {'val': 0}]
+
+Tuples:
+ original: [(0, 0), (1, -2), (2, -4), (3, -6)]
+ values: [0, -2, -4, -6]
+ sorted: [(3, -6), (2, -4), (1, -2), (0, 0)]
+
+```
+
+
+### 3.3.7 Combining Operators and Custom Classes
+
+> The functions in the `operator` module work via the standard Python interfaces when performing
+their operations. Thus, they work with user-defined classes as well as the built-in
+types.
+
+`operator` 模块中的函数在执行操作时通过标准 Python 接口工作。
+因此，它们可以使用用户定义的类以及内置类型。
+
+
+> Refer to the Python reference guide for a complete list of the special methods used by
+each operator.
+
+有关每个运算符使用的特殊方法的完整列表，请参阅 Python 参考指南。
+
+```python
+# 3_52_operator_classes.py
+from operator import *
+
+
+class MyObj:
+    """Example for operator overloading"""
+
+    def __init__(self, val):
+        super(MyObj, self).__init__()
+        self.val = val
+
+    def __str__(self):
+      return 'MyObj({})'.format(self.val)
+
+    def __lt__(self, other):
+        """compare for less-than"""
+        print('Testing {} < {}'.format(self, other))
+        return self.val < other.val
+
+    def __add__(self, other):
+        """add values"""
+        print('Adding {} + {}'.format(self, other))
+        return MyObj(self.val + other.val)
+
+
+a = MyObj(1)
+b = MyObj(2)
+
+print('Comparison:')
+print(lt(a, b))
+
+print('\nArithmetic:')
+print(add(a, b))
+```
+
+
+```text
+Comparison:
+Testing MyObj(1) < MyObj(2)
+True
+
+Arithmetic:
+Adding MyObj(1) + MyObj(2)
+MyObj(3)
+
+```
+
+
+## 3.4 contextlib: Context Manager Utilities
+
