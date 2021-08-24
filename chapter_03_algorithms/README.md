@@ -2755,3 +2755,623 @@ MyObj(3)
 
 ## 3.4 contextlib: Context Manager Utilities
 
+> The `contextlib` module contains utilities for working `with` context managers and the with
+statement.
+
+`contextlib` 模块包含用于处理上下文管理器和 `with` 语句的实用程序。
+
+
+### 3.4.1 Context Manager API
+
+> A `context` manager is responsible for a resource within a code block, possibly creating it
+when the block is entered and then cleaning it up after the block is exited. For example, files
+support the context manager API, which ensures that the files are closed after all reading
+or writing is done.
+
+`context` 管理器负责代码块中的资源，可能在进入该块时创建它，然后在退出该块后清理它。
+例如，文件支持上下文管理器 API，它确保在所有读取或写入完成后关闭文件。
+
+```python
+# with open('/tmp/pymotw.txt', 'wt') as f:
+# below works for Windows
+with open('C:/tmp/pymotw.txt', 'wt') as f:
+    f.write('contents go here')
+# File is automatically closed
+
+```
+
+> A context manager is enabled by the `with` statement, and the API involves two methods.
+The `__enter__()` method is run when execution flow enters the code block inside the `with`
+statement. It returns an object to be used within the context. When execution flow leaves
+the `with` block, the `__exit__()` method of the context manager is called to clean up any
+resources that were used.
+
+上下文管理器由 `with` 语句启用，API 涉及两种方法。
+`__enter__()` 方法在执行流程进入 `with` 语句内的代码块时运行。
+它返回要在上下文中使用的对象。
+当执行流程离开 `with` 块时，会调用上下文管理器的 `__exit__()` 方法来清理任何使用过的资源。
+
+> Combining a context manager and the `with` statement is a more compact way of writing
+a `try:finally` block, since the context manager’s `__exit__()` method is always called, even
+if an exception is raised.
+
+结合上下文管理器和 `with` 语句是编写 `try:finally` 块的更紧凑的方式，因为上下文管理器的 `__exit__()` 方法总是被调用，即使引发异常。
+
+```python
+# 3_54_contexlib_api.py
+class Context:
+
+    def __init__(self):
+        print('__init__()')
+
+    def __enter__(self):
+        print('__enter__()')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__()')
+
+
+with Context():
+    print('Doing work in the context')
+
+```
+
+```text
+__init__()
+__enter__()
+Doing work in the context
+__exit__()
+
+```
+
+
+> The `__enter__()` method can return any object to be associated with a name specified
+in the `as` clause of the `with` statement. In this example, the `Context` returns an object that
+uses the open context.
+
+`__enter__()` 方法可以返回与 `with` 语句的 `as` 子句中指定的名称相关联的任何对象。
+在这个例子中，`Context` 返回一个使用开放上下文的对象。
+
+> The value associated with the variable c is the object returned by `__enter__()`, which is
+not necessarily the `Context` instance created in the `with` statement.
+
+与变量 c 关联的值是 `__enter__()` 返回的对象，它不一定是 `with` 语句中创建的 `Context` 实例。
+
+
+```python
+# 3_55_contextlib_api_other_object.py
+class WithinContext:
+
+    def __init__(self, context):
+        print('WithinContext.__init__({})'.format(context))
+
+    def do_something(self):
+        print('WithinContext.do_something()')
+
+    def __del__(self):
+        print('WithinContext.__del__')
+
+
+class Context:
+
+    def __init__(self):
+        print('Context.__init__()')
+
+    def __enter__(self):
+        print('Context.__enter__()')
+        return WithinContext(self)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('Context.__exit__()')
+
+
+with Context() as c:
+    c.do_something()
+
+```
+
+
+```text
+Context.__init__()
+Context.__enter__()
+WithinContext.__init__(<__main__.Context object at 0x000001D4FD609FD0>)
+WithinContext.do_something()
+Context.__exit__()
+WithinContext.__del__
+
+```
+
+
+> The `__exit__()` method receives arguments containing details of any exception raised
+in the `with` block.
+
+`__exit__()` 方法接收包含 `with` 块中引发的任何异常的详细信息的参数。
+
+
+> If the context manager can handle the exception, `__exit__()` should return a true value
+to indicate that the exception does not need to be propagated. Returning a false value
+causes the exception to be raised again after `__exit__()` returns.
+
+如果上下文管理器可以处理异常，`__exit__()` 应该返回一个真值以指示不需要传播异常。
+返回 false 值会导致在 `__exit__()` 返回后再次引发异常。
+
+```python
+# 3_56_contextlib_api_error.py
+class Context:
+
+    def __init__(self, handle_error):
+        print('__init__({})'.format(handle_error))
+        self.handle_error = handle_error
+
+    def __enter__(self):
+        print('__enter__()')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__()')
+        print(' exc_type =', exc_type)
+        print(' exc_val =', exc_val)
+        print(' exc_tb =', exc_tb)
+        return self.handle_error
+
+
+with Context(True):
+    raise RuntimeError('error message handled')
+
+print()
+
+with Context(False):
+    raise RuntimeError('error message propagated')
+```
+
+```text
+__init__(True)
+__enter__()
+__exit__()
+ exc_type = <class 'RuntimeError'>
+ exc_val = error message handled
+ exc_tb = <traceback object at 0x00000162C77B6980>
+
+__init__(False)
+__enter__()
+__exit__()
+ exc_type = <class 'RuntimeError'>
+ exc_val = error message propagated
+ exc_tb = <traceback object at 0x00000162C7100B80>
+Traceback (most recent call last):
+  File "C:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_03_algorithms\section_3_4_contextlib\3_56_contextlib_api_error.py", line 25, in <module>
+    raise RuntimeError('error message propagated')
+RuntimeError: error message propagated
+```
+
+
+
+### 3.4.2 Context Managers as Function Decorators
+
+> The class `ContextDecorator` adds support to regular context manager classes so that they
+can be used as function decorators as well as context managers.
+
+类 ContextDecorator 增加了对常规上下文管理器类的支持，以便它们可以用作函数装饰器和上下文管理器。
+
+> One difference that arises when using the context manager as a decorator is that the
+value returned by `__enter__()` is not available inside the function being decorated, unlike the
+case when `with` and `as` are used. Arguments passed to the decorated function are available
+in the usual way.
+
+使用上下文管理器作为装饰器时出现的一个区别是，`__enter__()` 返回的值在被装饰的函数内不可用，这与使用 `with` 和 `as` 的情况不同。
+传递给装饰函数的参数以通常的方式可用。
+
+
+```python
+# 3_57_contexlib_decorator.py
+import contextlib
+
+
+class Context(contextlib.ContextDecorator):
+
+    def __init__(self, how_used):
+        self.how_used = how_used
+        print('__init__({})'.format(how_used))
+
+    def __enter__(self):
+        print('__enter__({})'.format(self.how_used))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('__exit__({})'.format(self.how_used))
+
+
+@Context('as decorator')
+def func(message):
+    print(message)
+
+
+print()
+
+with Context('as context manager'):
+    print('Doing work in the context')
+
+print()
+func('Doing work in the wrapped function')
+```
+
+```text
+__init__(as decorator)
+
+__init__(as context manager)
+__enter__(as context manager)
+Doing work in the context
+__exit__(as context manager)
+
+__enter__(as decorator)
+Doing work in the wrapped function
+__exit__(as decorator)
+
+```
+
+
+
+### 3.4.3 From Generator to Context Manager
+
+> Creating context managers the traditional way—that is, by writing a class with `__enter__()`
+and `__exit__()` methods—is not difficult. Nevertheless, writing everything out fully creates
+extra overhead when only a trivial bit of context is being managed. In those sorts of situations,
+the best approach is to use the `contextmanager()` decorator to convert a generator
+function into a context manager.
+
+以传统方式创建上下文管理器——也就是说，通过使用 `__enter__()` 和 `__exit__()` 方法编写一个类——并不困难。
+然而，当只管理一小部分上下文时，将所有内容完全写出来会产生额外的开销。
+在这种情况下，最好的方法是使用 `contextmanager()` 装饰器将生成器函数转换为上下文管理器。
+
+> The generator should initialize the context, invoke yield exactly one time, and then clean
+up the context. The value yielded, if any, is bound to the variable in the `as` clause of the `with`
+statement. Exceptions from within the `with` block are raised again inside the generator, so
+they can be handled there.
+
+生成器应该初始化上下文，只调用一次 yield，然后清理上下文。
+产生的值（如果有）绑定到 `with` 语句的 `as` 子句中的变量。
+`with` 块中的异常在生成器中再次引发，因此它们可以在那里处理。
+
+```python
+# 3_58_contextlib_contextmanager.py
+import contextlib
+
+
+@contextlib.contextmanager
+def make_context():
+    print(' entering')
+    try:
+        yield {}
+    except RuntimeError as err:
+        print(' ERROR:', err)
+    finally:
+        print(' exiting')
+
+
+print('Normal:')
+with make_context() as value:
+    print(' inside with statement:', value)
+
+print('\nHandled error:')
+with make_context() as value:
+    raise RuntimeError('showing example of handling an error')
+
+print('\nUnhandled error:')
+with make_context() as value:
+    raise ValueError('this exception is not handled')
+
+```
+
+
+```text
+Normal:
+ entering
+ inside with statement: {}
+ exiting
+
+Handled error:
+ entering
+ ERROR: showing example of handling an error
+ exiting
+
+Unhandled error:
+ entering
+ exiting
+Traceback (most recent call last):
+  File "C:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_03_algorithms\section_3_4_contextlib\3_58_contextlib_contextmanager.py", line 25, in <module>
+    raise ValueError('this exception is not handled')
+ValueError: this exception is not handled
+
+```
+
+
+> The context manager returned by `contextmanager()` is derived from `ContextDecorator`,
+so it also works as a function decorator.
+
+`contextmanager()` 返回的上下文管理器是从 `ContextDecorator` 派生的，因此它也可以作为函数装饰器使用。
+
+> As shown in the preceding `ContextDecorator` example, when the context manager is used
+as a decorator, the value yielded by the generator is not available inside the function being
+decorated. Arguments passed to the decorated function are still available, as demonstrated
+by `throw_error()` in this example.
+
+如前面的 `ContextDecorator` 示例所示，当上下文管理器用作装饰器时，生成器产生的值在被装饰的函数内部不可用。
+传递给装饰函数的参数仍然可用，如本示例中的“throw_error()”所示。
+
+
+```python
+# 3_59_contextlib_contextmanager_decorator.py
+import contextlib
+
+
+@contextlib.contextmanager
+def make_context():
+    print(' entering')
+    try:
+        # Yield control, but not a value, because any value
+        # yielded is not available when the context manager
+        # is used as a decorator.
+        yield
+    except RuntimeError as err:
+        print(' ERROR:', err)
+    finally:
+        print(' exiting')
+
+
+@make_context()
+def normal():
+    print(' inside with statement')
+
+
+@make_context()
+def throw_error(err):
+    raise err
+
+
+print('Normal:')
+normal()
+
+print('\nHandled error:')
+throw_error(RuntimeError('showing example of handling an error'))
+
+print('\nUnhandled error:')
+throw_error(ValueError('this exception is not handled'))
+
+```
+
+```text
+Traceback (most recent call last):
+  File "C:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_03_algorithms\section_3_4_contextlib\3_59_contextlib_contextmanager_decorator.py", line 35, in <module>
+    throw_error(ValueError('this exception is not handled'))
+  File "C:\Users\ABCX1C\AppData\Local\Programs\Python\Python39\lib\contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "C:\Users\ABCX1C\MyProjects\P3SL_Example\chapter_03_algorithms\section_3_4_contextlib\3_59_contextlib_contextmanager_decorator.py", line 25, in throw_error
+    raise err
+ValueError: this exception is not handled
+Normal:
+ entering
+ inside with statement
+ exiting
+
+Handled error:
+ entering
+ ERROR: showing example of handling an error
+ exiting
+
+Unhandled error:
+ entering
+ exiting
+
+Process finished with exit code 1
+
+```
+
+
+### 3.4.4 Closing Open Handles
+
+> The `file` class supports the context manager API directly, but some other objects that
+represent open handles do not. The example given in the standard library documentation
+for `contextlib` is the object returned from `urllib.urlopen()`. Some other legacy classes use
+a `close()` method but do not support the context manager API. To ensure that a handle
+is closed, use `closing()` to create a context manager for it.
+
+`file` 类直接支持上下文管理器 API，但其他一些表示打开句柄的对象不支持。
+`contextlib` 的标准库文档中给出的示例是从 `urllib.urlopen()` 返回的对象。
+其他一些遗留类使用 `close()` 方法，但不支持上下文管理器 API。
+为确保句柄已关闭，请使用 `closure()` 为其创建上下文管理器。
+
+
+> The handle is closed whether there is an error in the `with` block or not.
+
+无论 `with` 块中是否存在错误，句柄都会关闭。
+
+```python
+# 3_60_contextlib_closing.py
+import contextlib
+
+
+class Door:
+
+    def __init__(self):
+        print(' __init__()')
+        self.status = 'open'
+
+    def close(self):
+        print(' close()')
+        self.status = 'closed'
+
+
+print('Normal Example:')
+with contextlib.closing(Door()) as door:
+    print(' inside with statement: {}'.format(door.status))
+print(' outside with statement: {}'.format(door.status))
+
+print('\nError handling example:')
+try:
+    with contextlib.closing(Door()) as door:
+        print(' raising from inside with statement')
+        raise RuntimeError('error message')
+except Exception as err:
+    print(' Had an error:', err)
+
+```
+
+```text
+Normal Example:
+ __init__()
+ inside with statement: open
+ close()
+ outside with statement: closed
+
+Error handling example:
+ __init__()
+ raising from inside with statement
+ close()
+ Had an error: error message
+
+```
+
+
+### 3.4.5 Ignoring Exceptions
+
+> It is frequently useful to ignore exceptions raised by libraries, because the error indicates
+that the desired state has already been achieved or can otherwise be ignored. The most
+common way to ignore exceptions is with a `try:except` statement that includes only a `pass`
+statement in the `except` block.
+
+忽略库引发的异常通常很有用，因为错误表明已达到或可以忽略所需的状态。
+忽略异常的最常见方法是使用 `try:except` 语句，该语句在 `except` 块中只包含一个 `pass` 语句。
+
+
+> In this case, the operation fails and the error is ignored.
+
+在这种情况下，操作失败并忽略错误。
+
+```python
+# 3_61_contextlib_ignore_error.py
+import contextlib
+
+
+class NonFatalError(Exception):
+    pass
+
+
+def non_idempotent_operation():
+    raise NonFatalError(
+        'The operation failed because of existing state'
+    )
+
+
+try:
+    print('trying non-idempotent operation')
+    non_idempotent_operation()
+    print('succeeded!')
+except NonFatalError:
+    pass
+
+print('done')
+
+```
+
+```text
+trying non-idempotent operation
+done
+
+```
+
+> The `try:except` form can be replaced with `contextlib.suppress()` to more explicitly
+suppress a class of exceptions happening anywhere within the `with` block.
+
+`try:except` 形式可以替换为 `contextlib.suppress()`，以更明确地抑制发生在 `with` 块内任何地方的一类异常。
+
+> In this updated version, the exception is discarded entirely.
+
+在这个更新版本中，异常被完全丢弃。
+
+```python
+# 3_63_contextlib_suppress.py
+import contextlib
+
+
+class NonFatalError(Exception):
+    pass
+
+
+def non_idempotent_operation():
+    raise NonFatalError(
+        'The operation failed because of existing state'
+    )
+
+
+with contextlib.suppress(NonFatalError):
+    print('trying non-idempotent operation')
+    non_idempotent_operation()
+    print('succeeded!')
+
+print('done')
+
+```
+
+
+```text
+trying non-idempotent operation
+done
+
+```
+
+
+### 3.4.6 Redirecting Output Streams
+
+> Poorly designed library code may write directly to `sys.stdout` or `sys.stderr`, without providing
+arguments to configure different output destinations. The `redirect_stdout()` and
+`redirect_stderr()` context managers can be used to capture output from these kinds of
+functions, for which the source cannot be changed to accept a new output argument.
+
+设计不佳的库代码可能会直接写入 `sys.stdout` 或 `sys.stderr`，而不提供参数来配置不同的输出目的地。
+`redirect_stdout()` 和 `redirect_stderr()` 上下文管理器可用于捕获来自这些类型函数的输出，对于这些函数，源不能更改为接受新的输出参数。
+
+
+> In this example, `misbehaving_function()` writes to both `stdout` and `stderr`, but the two
+context managers send that output to the same `io.StringIO` instance, where it is saved for
+later use.
+
+在这个例子中，`misbesharing_function()` 写入`stdout` 和`stderr`，
+但是两个上下文管理器将该输出发送到同一个`io.StringIO` 实例，在那里保存以备后用。
+
+> Both `redirect_stdout()` and `redirect_stderr()` modify the global state by replacing objects in
+the `sys` (page 1178) module; for this reason, they should be used with care. The functions are not really
+thread-safe, so calling them in a multithreaded application will have nondeterministic results. They also
+may interfere with other operations that expect the standard output streams to be attached to terminal
+devices.
+
+`redirect_stdout()` 和 `redirect_stderr()` 都通过替换 `sys`（第 1178 页）模块中的对象来修改全局状态；
+因此，应谨慎使用它们。
+这些函数并不是真正的线程安全的，因此在多线程应用程序中调用它们将产生不确定的结果。
+它们还可能干扰其他期望将标准输出流附加到终端设备的操作。
+
+```python
+# 3_63_contextlib_redirect.py
+from contextlib import redirect_stdout, redirect_stderr
+import io
+import sys
+
+
+def misbehaving_function(a):
+    sys.stdout.write('(stdout) A: {!r}\n'.format(a))
+    sys.stderr.write('(stderr) A: {!r}\n'.format(a))
+
+
+capture = io.StringIO()
+with redirect_stdout(capture), redirect_stderr(capture):
+    misbehaving_function(5)
+
+print(capture.getvalue())
+
+```
+
+```text
+(stdout) A: 5
+(stderr) A: 5
+
+```
