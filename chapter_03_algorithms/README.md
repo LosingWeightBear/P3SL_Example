@@ -3375,3 +3375,435 @@ print(capture.getvalue())
 (stderr) A: 5
 
 ```
+
+
+
+### 3.4.7 Dynamic Context Manager Stacks
+
+> Most context managers operate on one object at a time, such as a single file or database
+handle. In these cases, the object is known in advance and the code using the context
+manager can be built around that one object. In other cases, a program may need to create
+an unknown number of objects within a context, with all of those objects expected to be
+cleaned up when control flow exits the context. `ExitStack` was created to handle these more
+dynamic cases.
+
+大多数上下文管理器一次对一个对象进行操作，例如单个文件或数据库句柄。
+在这些情况下，对象是预先知道的，并且可以围绕该对象构建使用上下文管理器的代码。
+在其他情况下，程序可能需要在上下文中创建未知数量的对象，当控制流退出上下文时，所有这些对象都将被清除。 
+`ExitStack` 的创建是为了处理这些更动态的情况。
+
+
+> An `ExitStack` instance maintains a stack data structure of cleanup callbacks. The callbacks
+are populated explicitly within the context, and any registered callbacks are called
+in the reverse order when control flow exits the context. The result is similar to having
+multiple nested `with` statements, except they are established dynamically.
+
+`ExitStack` 实例维护一个清理回调的堆栈数据结构。
+回调在上下文中显式填充，当控制流退出上下文时，任何注册的回调都以相反的顺序调用。
+结果类似于具有多个嵌套的 `with` 语句，只是它们是动态建立的。
+
+
+#### 3.4.7.1 Stacking Context Managers
+
+> Several approaches may be used to populate the `ExitStack`. This example uses `enter_
+context()` to add a new context manager to the stack.
+
+可以使用多种方法来填充`ExitStack`。
+此示例使用 `enter_ context()` 将一个新的上下文管理器添加到堆栈中。
+
+
+> `enter_context()` first calls `__enter__()` on the context manager. It then registers its
+`__exit__()` method as a callback to be invoked as the stack is undone.
+
+`enter_context()` 首先在上下文管理器上调用 `__enter__()`。
+然后它注册它的 `__exit__()` 方法作为一个回调，当堆栈被撤消时被调用。
+
+
+```python
+# 3_64_contextlib_exitstack_enter_context.py
+import contextlib
+
+
+@contextlib.contextmanager
+def make_context(i):
+    print('{} entering'.format(i))
+    yield {}
+    print('{} exiting'.format(i))
+
+
+def variable_stack(n, msg):
+    with contextlib.ExitStack() as stack:
+        for i in range(n):
+            stack.enter_context(make_context(i))
+        print(msg)
+
+
+variable_stack(2, 'inside context')
+
+```
+
+```text
+0 entering
+1 entering
+inside context
+1 exiting
+0 exiting
+
+```
+
+
+> The context managers given to `ExitStack` are treated as though they appear within a
+series of nested `with` statements. Errors that happen anywhere within the context propagate
+through the normal error handling of the context managers. The following context manager
+classes illustrate the way errors propagate.
+
+赋予 `ExitStack` 的上下文管理器被视为出现在一系列嵌套的 `with` 语句中。
+上下文中任何地方发生的错误通过上下文管理器的正常错误处理传播。
+以下上下文管理器类说明了错误传播的方式。
+
+
+> The following examples using these classes are based on `variable_stack()`, which uses
+the context managers passed to construct an `ExitStack`, building up the overall context in
+a step-by-step manner. The examples pass different context managers to explore the error
+handling behavior. The first example presents the normal case of no exceptions.
+
+以下使用这些类的示例基于 `variable_stack()`，它使用传递的上下文管理器来构造一个 `ExitStack`，以逐步的方式构建整体上下文。
+这些示例通过不同的上下文管理器来探索错误处理行为。
+第一个例子展示了没有异常的正常情况。
+
+
+```python
+print('No errors:')
+variable_stack([
+    HandleError(1),
+    PassError(2),
+])
+```
+
+> The next example illustrates handling exceptions within the context managers at the end
+of the stack, in which all of the open contexts are closed as the stack is unwound.
+
+下一个示例说明在堆栈末尾的上下文管理器中处理异常，其中所有打开的上下文在堆栈展开时关闭。
+
+```python
+print('\nError at the end of the context stack:')
+variable_stack([
+    HandleError(1),
+    HandleError(2),
+    ErrorOnExit(3),
+])
+```
+
+> In the next example, exceptions are handled within the context managers in the middle of
+the stack. The error does not occur until some contexts are already closed, so those contexts
+do not see the error.
+
+在下一个示例中，异常在堆栈中间的上下文管理器中处理。
+在某些上下文已经关闭之前不会发生错误，因此这些上下文看不到错误。
+
+
+```python
+print('\nError in the middle of the context stack:')
+variable_stack([
+    HandleError(1),
+    PassError(2),
+    ErrorOnExit(3),
+    HandleError(4),
+])
+```
+
+> The final example shows the case in which the exception remains unhandled and propagates
+up to the calling code.
+
+最后一个示例显示了异常未处理并传播到调用代码的情况。
+
+```python
+try:
+    print('\nError ignored:')
+    variable_stack([
+        PassError(1),
+        ErrorOnExit(2),
+    ])
+except RuntimeError:
+    print('error handled outside of context')
+```
+
+> If any context manager in the stack receives an exception and returns a `True` value, it
+prevents that exception from propagating up to any other context managers.
+
+如果堆栈中的任何上下文管理器收到异常并返回“True”值，它会阻止该异常传播到任何其他上下文管理器。
+
+
+```text
+No errors:
+ HandleError(1): entering
+ PassError(2): entering
+ PassError(2): exiting
+ HandleError(1): exiting False
+ outside of stack, any errors were handled
+
+Error at the end of the context stack:
+ HandleError(1): entering
+ HandleError(2): entering
+ ErrorOnExit(3): entering
+ ErrorOnExit(3): throwing error
+ HandleError(2): handling exception RuntimeError('from 3')
+ HandleError(2): exiting True
+ HandleError(1): exiting False
+ outside of stack, any errors were handled
+
+Error in the middle of the context stack:
+ HandleError(1): entering
+ PassError(2): entering
+ ErrorOnExit(3): entering
+ HandleError(4): entering
+ HandleError(4): exiting False
+ ErrorOnExit(3): throwing error
+ PassError(2): passing exception RuntimeError('from 3')
+ PassError(2): exiting
+ HandleError(1): handling exception RuntimeError('from 3')
+ HandleError(1): exiting True
+ outside of stack, any errors were handled
+
+Error ignored:
+ PassError(1): entering
+ ErrorOnExit(2): entering
+ ErrorOnExit(2): throwing error
+ PassError(1): passing exception RuntimeError('from 2')
+ PassError(1): exiting
+ error handled outside of context
+
+Process finished with exit code 0
+
+```
+
+
+#### 3.4.7.2 Arbitrary Context Callbacks
+
+> `ExitStack` also supports arbitrary callbacks for closing a context, making it easy to clean
+up resources that are not controlled via a context manager.
+
+`ExitStack` 还支持关闭上下文的任意回调，从而可以轻松清理不受上下文管理器控制的资源。
+
+> Just as with the `__exit__()` methods of full context managers, the callbacks are invoked in
+the reverse order that they are registered.
+
+就像完整上下文管理器的 `__exit__()` 方法一样，回调的调用顺序与它们注册的顺序相反。
+
+```python
+# 3_66_contextlib_exitstack_callbacks.py
+import contextlib
+
+
+def callback(*args, **kwds):
+    print('closing callback({}, {})'.format(args, kwds))
+
+
+with contextlib.ExitStack() as stack:
+    stack.callback(callback, 'arg1', 'arg2')
+    stack.callback(callback, arg3='val3')
+```
+
+
+```text
+closing callback((), {'arg3': 'val3'})
+closing callback(('arg1', 'arg2'), {})
+```
+
+
+> The callbacks are invoked regardless of whether an error occurred, and they are not given
+any information about whether an error occurred. Their return value is ignored.
+
+无论是否发生错误，都会调用回调，并且不会向它们提供有关是否发生错误的任何信息。
+它们的返回值被忽略。
+
+> Because they do not have access to the error, callbacks are unable to prevent exceptions
+from propagating through the rest of the stack of context managers.
+
+因为它们无权访问错误，回调无法阻止异常通过上下文管理器堆栈的其余部分传播。
+
+
+```python
+# 3_67_contextlib_exitstack_callbacks_error.py
+import contextlib
+
+
+def callback(*args, **kwds):
+    print('closing callback({}, {})'.format(args, kwds))
+
+
+try:
+    with contextlib.ExitStack() as stack:
+        stack.callback(callback, 'arg1', 'arg2')
+        stack.callback(callback, arg3='val3')
+        raise RuntimeError('thrown error')
+except RuntimeError as err:
+    print('ERROR: {}'.format(err))
+```
+
+```text
+closing callback((), {'arg3': 'val3'})
+closing callback(('arg1', 'arg2'), {})
+ERROR: thrown error
+
+```
+
+
+> Callbacks offer a convenient way to clearly define cleanup logic without the overhead
+of creating a new context manager class. To improve code readability, that logic can be
+encapsulated in an inline function, and `callback()` can be used as a decorator.
+
+回调提供了一种方便的方法来明确定义清理逻辑，而无需创建新的上下文管理器类。
+为了提高代码可读性，可以将该逻辑封装在一个内联函数中，并且`callback()` 可以用作装饰器。
+
+> There is no way to specify the arguments for functions registered using the decorator
+form of `callback()`. However, if the cleanup callback is defined inline, scope rules give it
+access to variables defined in the calling code.
+
+无法为使用“callback()”的装饰器形式注册的函数指定参数。
+但是，如果清理回调是内联定义的，作用域规则允许它访问调用代码中定义的变量。
+
+
+```python
+# 3_68_contextlib_exitstack_callbacks_decorator.py
+import contextlib
+
+
+with contextlib.ExitStack() as stack:
+
+    @stack.callback
+    def inline_cleanup():
+        print('inline_cleanup()')
+        print('local_resource = {!r}'.format(local_resource))
+
+    local_resource = 'resource created in context'
+    print('within the context')
+
+```
+
+```text
+within the context
+inline_cleanup()
+local_resource = 'resource created in context'
+
+```
+
+
+#### 3.4.7.3 Partial Stacks
+
+> Sometimes when building complex contexts, it is useful to be able to abort an operation if
+the context cannot be completely constructed, but to delay the cleanup of all resources until
+a later time if they can all be set up properly. For example, if an operation needs several
+long-lived network connections, it may be best to not start the operation if one connection
+fails. However, if all of the connections can be opened, they need to stay open longer than
+the duration of a single context manager. The `pop_all()` method of `ExitStack` can be used
+in this scenario.
+
+有时在构建复杂的上下文时，如果上下文不能完全构建，可以中止操作是有用的，但如果它们都可以正确设置，则将所有资源的清理延迟到稍后的时间。
+例如，如果一项操作需要多个长期存在的网络连接，如果一个连接失败，最好不要启动该操作。
+但是，如果所有连接都可以打开，则它们需要保持打开状态的时间长于单个上下文管理器的持续时间。
+在这种情况下可以使用`ExitStack`的`pop_all()`方法。
+
+> `pop_all()` clears all of the context managers and callbacks from the stack on which it
+is called, and returns a new stack prepopulated with those same context managers and
+callbacks. The `close()` method of the new stack can be invoked later, after the original
+stack is gone, to clean up the resources.
+
+`pop_all()` 从调用它的堆栈中清除所有上下文管理器和回调，并返回一个预先填充了这些相同上下文管理器和回调的新堆栈。
+新堆栈的`close()`方法可以在原堆栈消失后调用，以清理资源。
+
+
+> This example uses the same context manager classes defined earlier, but `ErrorOnEnter`
+produces an error on `__enter__()` instead of `__exit__()`. Inside `variable_stack()`, if all
+of the contexts are entered without error, then the `close()` method of a new `ExitStack`
+is returned. If a handled error occurs, `variable_stack()` returns `None` to indicate that the
+cleanup work has already been done. If an unhandled error occurs, the partial stack is
+cleaned up and the error is propagated. 
+
+此示例使用之前定义的相同上下文管理器类，但 `ErrorOnEnter` 会在 `__enter__()` 而不是 `__exit__()` 上产生错误。
+在 `variable_stack()` 内部，如果所有上下文都没有错误地输入，则返回新的 `ExitStack` 的 `close()` 方法。
+如果发生处理错误，`variable_stack()` 返回 `None` 表示清理工作已经完成。
+如果发生未处理的错误，则会清除部分堆栈并传播错误。
+
+```python
+# 3_69_contextlib_exitstack_pop_all.py
+import contextlib
+
+from contextlib_context_managers import *
+
+
+def variable_stack(contexts):
+    with contextlib.ExitStack() as stack:
+        for c in contexts:
+            stack.enter_context(c)
+        # Return the close() method of a new stack as a clean-up
+        # function.
+        return stack.pop_all().close
+    # Explicitly return None, indicating that the ExitStack could
+    # not be initialized cleanly but that cleanup has already
+    # occurred.
+    return None
+
+
+print('No errors:')
+cleaner = variable_stack([
+    HandleError(1),
+    HandleError(2),
+])
+cleaner()
+
+print('\nHandled error building context manager stack:')
+try:
+    cleaner = variable_stack([
+        HandleError(1),
+        ErrorOnEnter(2),
+    ])
+except RuntimeError as err:
+    print('caught error {}'.format(err))
+else:
+    if cleaner is not None:
+        cleaner()
+    else:
+        print('no cleaner returned')
+
+print('\nUnhandled error building context manager stack:')
+try:
+    cleaner = variable_stack([
+        PassError(1),
+        ErrorOnEnter(2),
+    ])
+except RuntimeError as err:
+    print('caught error {}'.format(err))
+else:
+    if cleaner is not None:
+        cleaner()
+    else:
+        print('no cleaner returned')
+
+```
+
+
+````text
+No errors:
+ HandleError(1): entering
+ HandleError(2): entering
+ HandleError(2): exiting False
+ HandleError(1): exiting False
+
+Handled error building context manager stack:
+ HandleError(1): entering
+ ErrorOnEnter(2): throwing error on enter
+ HandleError(1): handling exception RuntimeError('from 2')
+ HandleError(1): exiting True
+no cleaner returned
+
+Unhandled error building context manager stack:
+ PassError(1): entering
+ ErrorOnEnter(2): throwing error on enter
+ PassError(1): passing exception RuntimeError('from 2')
+ PassError(1): exiting
+caught error from 2
+
+Process finished with exit code 0
+
+````
