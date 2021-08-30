@@ -600,3 +600,495 @@ Parsed:
 
 Formatted: Tue Jan 03 05:17:27 2017
 ````
+
+
+## 4.2 datetime: Date and Time Value Manipulation
+
+> `datetime` contains functions and classes for date and time parsing, formatting, and arithmetic.
+
+datetime` 包含用于日期和时间解析、格式化和算术的函数和类。
+
+
+### 4.2.1 Times
+
+> Time values are represented with the `time` class. A `time` instance has attributes for `hour`,
+`minute`, `second`, and `microsecond`; it can also include time zone information.
+
+时间值用`time` 类表示。
+`time` 实例具有 `hour`、`minute`、`second` 和 `microsecond` 的属性；
+它还可以包括时区信息。
+
+> The arguments to initialize a time instance are optional, but the default of 0 is unlikely to
+be correct.
+
+初始化时间实例的参数是可选的，但默认值 0 不太可能正确。
+
+```python
+# 4_11_datetime_time.py
+import datetime
+
+t = datetime.time(1, 2, 3)
+print(t)
+print('hour       :', t.hour)
+print('minute     :', t.minute)
+print('second     :', t.second)
+print('microsecond:', t.microsecond)
+print('tzinfo     :', t.tzinfo)
+
+```
+
+```text
+01:02:03
+hour       : 1
+minute     : 2
+second     : 3
+microsecond: 0
+tzinfo     : None
+
+```
+
+
+> A `time` instance holds only values of time; it does not include a date associated with the
+time.
+
+`time` 实例只保存时间值；它不包括与时间相关的日期。
+
+
+> The `min` and `max` class attributes reflect the valid range of times in a single day.
+
+`min` 和 `max` 类属性反映了一天中的有效时间范围。
+
+
+```python
+# 4_12_datetime_time_minmax.py
+import datetime
+
+print('Earliest  :', datetime.time.min)
+print('Latest    :', datetime.time.max)
+print('Resolution:', datetime.time.resolution)
+
+```
+
+```text
+Earliest  : 00:00:00
+Latest    : 23:59:59.999999
+Resolution: 0:00:00.000001
+
+```
+
+
+> The resolution for `time` is limited to whole microseconds.
+
+`time` 的分辨率限制为整微秒。
+
+
+> Floating-point values for microseconds cause a `TypeError`.
+
+微秒的浮点值会导致“TypeError”。
+
+```python
+# 4_13_datetime_time_resolution.py
+import datetime
+
+for m in [1, 0, 0.1, 0.6]:
+    try:
+        print('{:02.1f} :'.format(m), datetime.time(0, 0, 0, microsecond=m))
+    except TypeError as err:
+        print('ERROR:', err)
+
+```
+
+
+```text
+1.0 : 00:00:00.000001
+0.0 : 00:00:00
+ERROR: integer argument expected, got float
+ERROR: integer argument expected, got float
+
+```
+
+
+### 4.2.2 Dates
+
+> Calendar date values are represented with the `date` class. Instances have attributes for year,
+month, and day. It is easy to create a date representing the current date using the `today()`
+class method.
+
+日历日期值用`date` 类表示。
+实例具有年、月和日的属性。
+使用 `today()` 类方法可以轻松创建表示当前日期的日期。
+
+> This example prints the current date in several formats.
+
+此示例以多种格式打印当前日期。
+
+
+```python
+# 4_14_datetime_date.py
+import datetime
+
+today = datetime.date.today()
+print(today)
+print('ctime  :', today.ctime())
+tt = today.timetuple()
+print('tuple  : tm_year  =', tt.tm_year)
+print('         tm_mon   =', tt.tm_mon)
+print('         tm_mday  =', tt.tm_mday)
+print('         tm_hour  =', tt.tm_hour)
+print('         tm_min   =', tt.tm_min)
+print('         tm_sec   =', tt.tm_sec)
+print('         tm_wday  =', tt.tm_wday)
+print('         tm_yday  =', tt.tm_yday)
+print('         tm_isdst =', tt.tm_isdst)
+print('ordinal:', today.toordinal())
+print('Year   :', today.year)
+print('Mon    :', today.month)
+print('Day    :', today.day)
+
+```
+
+```text
+2021-08-30
+ctime  : Mon Aug 30 00:00:00 2021
+tuple  : tm_year  = 2021
+         tm_mon   = 8
+         tm_mday  = 30
+         tm_hour  = 0
+         tm_min   = 0
+         tm_sec   = 0
+         tm_wday  = 0
+         tm_yday  = 242
+         tm_isdst = -1
+ordinal: 738032
+Year   : 2021
+Mon    : 8
+Day    : 30
+
+
+```
+
+
+> There are also class methods for creating instances from POSIX timestamps or integers
+representing date values from the Gregorian calendar, where January 1 of the year 1 is
+designated as having the value 1 and each subsequent day increments the value by 1.
+
+还有一些类方法可以从 POSIX 时间戳或代表公历日期值的整数创建实例，
+其中第 1 年的 1 月 1 日被指定为具有值 1，
+并且随后的每一天将该值增加 1。
+
+
+> This example illustrates the different value types used by `fromordinal()` and
+`fromtimestamp()`.
+
+这个例子说明了 `fromordinal()` 和 `fromtimestamp()` 使用的不同值类型。
+
+
+```python
+# 4_15_datetime_date_fromordinal.py
+import datetime
+import time
+
+
+o = 733114
+print('o               :', o)
+print('fromordinal(o)  :', datetime.date.fromordinal(o))
+
+t = time.time()
+print('t               :', t)
+print('fromtimestamp(t):', datetime.date.fromtimestamp(t))
+
+```
+
+```text
+o               : 733114
+fromordinal(o)  : 2008-03-13
+t               : 1630295598.8341322
+fromtimestamp(t): 2021-08-30
+
+```
+
+
+> As is true with the `time` class, the range of date values supported can be determined
+using the `min` and `max` attributes.
+
+与`time` 类一样，支持的日期值范围可以使用`min` 和`max` 属性来确定。
+
+
+> The resolution for dates is whole days.
+
+日期的分辨率是整天。
+
+
+
+
+```python
+# 4_16_datetime_date_minmax.py
+import datetime
+
+print('Earliest :', datetime.date.min)
+print('Latest :', datetime.date.max)
+print('Resolution:', datetime.date.resolution)
+
+```
+
+
+```text
+Earliest : 0001-01-01
+Latest : 9999-12-31
+Resolution: 1 day, 0:00:00
+
+```
+
+
+> Another way to create new `date` instances is to use the `replace()` method of an existing
+date.
+
+另一种创建新的`date` 实例的方法是使用现有日期的`replace()` 方法。
+
+
+> This example changes the year, leaving the day and month unmodified.
+
+此示例更改了年份，而未修改日期和月份。
+
+
+```python
+# 4_18_datetime_date_replace.py
+import datetime
+
+d1 = datetime.date(2008, 3, 29)
+print('d1:', d1.ctime())
+
+d2 = d1.replace(year=2009)
+print('d2:', d2.ctime())
+
+```
+
+
+```text
+d1: Sat Mar 29 00:00:00 2008
+d2: Sun Mar 29 00:00:00 2009
+
+```
+
+
+### 4.2.3 timedeltas
+
+> Future and past dates can be calculated using basic arithmetic on two `datetime` objects, or
+by combining a `datetime` with a `timedelta`. Subtracting dates produces a `timedelta`, and
+a `timedelta` can be also added or subtracted from a date to produce another date. The
+internal values for a `timedelta` are stored in days, seconds, and microseconds.
+
+未来和过去的日期可以使用两个 `datetime` 对象的基本算术来计算，或者通过将 `datetime` 与 `timedelta` 组合来计算。
+减去日期会产生一个 `timedelta`，并且一个 `timedelta` 也可以从一个日期中添加或减去以产生另一个日期。
+`timedelta` 的内部值以天、秒和微秒为单位存储。
+
+> Intermediate-level values passed to the constructor are converted into days, seconds, and
+microseconds.
+
+传递给构造函数的中级值被转换为天、秒和微秒。
+
+```python
+# 4_18_datetime_timedelta.py
+import datetime
+
+print('microseconds:', datetime.timedelta(microseconds=1))
+print('milliseconds:', datetime.timedelta(milliseconds=1))
+print('seconds     :', datetime.timedelta(seconds=1))
+print('minutes     :', datetime.timedelta(minutes=1))
+print('hours       :', datetime.timedelta(hours=1))
+print('days        :', datetime.timedelta(days=1))
+print('weeks       :', datetime.timedelta(weeks=1))
+
+```
+
+```text
+microseconds: 0:00:00.000001
+milliseconds: 0:00:00.001000
+seconds     : 0:00:01
+minutes     : 0:01:00
+hours       : 1:00:00
+days        : 1 day, 0:00:00
+weeks       : 7 days, 0:00:00
+
+```
+
+
+> The full duration of a `timedelta` can be retrieved as a number of seconds using
+`total_seconds()`.
+
+可以使用“total_seconds()”以秒数形式检索“timedelta”的完整持续时间。
+
+> The return value is a floating-point number, to accommodate durations of less than 1 second.
+
+返回值是一个浮点数，以适应小于 1 秒的持续时间。
+
+```python
+# 4_19_datetime_timedelta_total_seconds.py
+import datetime
+
+for delta in [datetime.timedelta(microseconds=1),
+              datetime.timedelta(milliseconds=1),
+              datetime.timedelta(seconds=1),
+              datetime.timedelta(minutes=1),
+              datetime.timedelta(hours=1),
+              datetime.timedelta(days=1),
+              datetime.timedelta(weeks=1),
+              ]:
+    print('{:15} = {:8} seconds'.format(str(delta), delta.total_seconds()))
+
+```
+
+
+```text
+0:00:00.000001  =    1e-06 seconds
+0:00:00.001000  =    0.001 seconds
+0:00:01         =      1.0 seconds
+0:01:00         =     60.0 seconds
+1:00:00         =   3600.0 seconds
+1 day, 0:00:00  =  86400.0 seconds
+7 days, 0:00:00 = 604800.0 seconds
+
+```
+
+
+### 4.2.4 Date Arithmetic
+
+> Date math uses the standard arithmetic operators.
+
+日期数学使用标准算术运算符。
+
+> This example with date objects illustrates the use of `timedelta` objects to compute new
+dates. In addition, date instances are subtracted to produce `timedelta` objects (including a
+negative delta value).
+
+这个带有日期对象的示例说明了使用`timedelta`对象来计算新日期。
+此外，减去日期实例以生成`timedelta`对象（包括负增量值）。
+
+
+```python
+# 4_20_datetime_date_math.py
+import datetime
+
+today = datetime.date.today()
+print('Today :', today)
+
+one_day = datetime.timedelta(days=1)
+print('One day :', one_day)
+
+yesterday = today - one_day
+print('Yesterday:', yesterday)
+
+tomorrow = today + one_day
+print('Tomorrow :', tomorrow)
+print()
+print('tomorrow - yesterday:', tomorrow - yesterday)
+print('yesterday - tomorrow:', yesterday - tomorrow)
+
+```
+
+```text
+Today : 2021-08-30
+One day : 1 day, 0:00:00
+Yesterday: 2021-08-29
+Tomorrow : 2021-08-31
+
+tomorrow - yesterday: 2 days, 0:00:00
+yesterday - tomorrow: -2 days, 0:00:00
+
+```
+
+
+
+> A `timedelta` object also supports arithmetic with integers, floats, and other `timedelta`
+instances.
+
+`timedelta` 对象还支持整数、浮点数和其他 `timedelta` 实例的算术运算。
+
+
+> In this example, several multiples of a single day are computed, with the resulting `timedelta`
+holding the appropriate number of days or hours.
+
+在此示例中，计算了一天的多个倍数，结果 `timedelta` 包含适当的天数或小时数。
+
+> The final example demonstrates how to compute values by combining two `timedelta`
+objects. In this case, the result is a floating-point number.
+
+最后一个示例演示了如何通过组合两个 `timedelta` 对象来计算值。
+在这种情况下，结果是一个浮点数。
+
+
+```python
+# 4_21_datetime_timedelta_math.py
+import datetime
+
+one_day = datetime.timedelta(days=1)
+print('1 day :', one_day)
+print('5 days :', one_day * 5)
+print('1.5 days :', one_day * 1.5)
+print('1/4 day :', one_day / 4)
+
+# Assume an hour for lunch.
+work_day = datetime.timedelta(hours=7)
+meeting_length = datetime.timedelta(hours=1)
+print('meetings per day :', work_day / meeting_length)
+
+```
+
+```text
+1 day : 1 day, 0:00:00
+5 days : 5 days, 0:00:00
+1.5 days : 1 day, 12:00:00
+1/4 day : 6:00:00
+meetings per day : 7.0
+
+```
+
+
+### 4.2.5 Comparing Values
+
+> Both date and time values can be compared using the standard comparison operators to
+determine which is earlier or later.
+
+可以使用标准比较运算符来比较日期和时间值，以确定哪个更早或更晚。
+
+> All comparison operators are supported.
+
+支持所有比较运算符。
+
+```python
+# 4_22_datetime_comparing.py
+import datetime
+
+print('Times:')
+t1 = datetime.time(12, 55, 0)
+print(' t1:', t1)
+t2 = datetime.time(13, 5, 0)
+print(' t2:', t2)
+print(' t1 < t2:', t1 < t2)
+
+print
+print('Dates:')
+d1 = datetime.date.today()
+print(' d1:', d1)
+d2 = datetime.date.today() + datetime.timedelta(days=1)
+print(' d2:', d2)
+print(' d1 > d2:', d1 > d2)
+
+```
+
+
+```text
+Times:
+ t1: 12:55:00
+ t2: 13:05:00
+ t1 < t2: True
+Dates:
+ d1: 2021-08-30
+ d2: 2021-08-31
+ d1 > d2: False
+
+```
+
+
+### 4.2.6 Combining Dates and Times
+
