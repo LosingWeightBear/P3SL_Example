@@ -1092,3 +1092,199 @@ Dates:
 
 ### 4.2.6 Combining Dates and Times
 
+> Use the `datetime` class to hold values consisting of both date and time components. As with
+`date`, several convenient class methods are available for creating `datetime` instances from
+other common values.
+
+使用 `datetime` 类来保存由日期和时间组件组成的值。
+与 `date` 一样，有几个方便的类方法可用于从其他常用值创建 `datetime` 实例。
+
+> As might be expected, the `datetime` instance has all of the attributes of both a `date`
+object and a `time` object.
+
+正如所料，`datetime` 实例具有`date` 对象和`time` 对象的所有属性。
+
+
+```python
+# 4_23_datetime_datetime.py
+import datetime
+
+print('Now :', datetime.datetime.now())
+print('Today :', datetime.datetime.today())
+print('UTC Now:', datetime.datetime.utcnow())
+print
+
+FIELDS = [
+    'year', 'month', 'day',
+    'hour', 'minute', 'second',
+    'microsecond',
+]
+
+d = datetime.datetime.now()
+for attr in FIELDS:
+    print('{:15}: {}'.format(attr, getattr(d, attr)))
+
+```
+
+```text
+Now : 2021-08-31 09:28:35.126765
+Today : 2021-08-31 09:28:35.126766
+UTC Now: 2021-08-31 01:28:35.126765
+year           : 2021
+month          : 8
+day            : 31
+hour           : 9
+minute         : 28
+second         : 35
+microsecond    : 126765
+
+```
+
+
+> Just like `date`, `datetime` provides convenient class methods for creating new instances. It
+also includes `fromordinal()` and `fromtimestamp()`.
+
+就像 `date` 一样，`datetime` 提供了方便的类方法来创建新实例。
+它还包括`fromordinal()`和`fromtimestamp()`。
+
+> `combine()` creates `datetime` instances from one `date` and one `time` instance.
+
+combine()` 从一个 `date` 和一个 `time` 实例创建 `datetime` 实例。
+
+
+```python
+# 4_24_datetime_datetime_combine.py
+import datetime
+
+t = datetime.time(1, 2, 3)
+print('t :', t)
+
+d = datetime.date.today()
+print('d :', d)
+
+dt = datetime.datetime.combine(d, t)
+print('dt:', dt)
+
+```
+
+```text
+t : 01:02:03
+d : 2021-08-31
+dt: 2021-08-31 01:02:03
+
+```
+
+
+### 4.2.7 Formatting and Parsing
+
+> The default string representation of a datetime object uses the `ISO-8601` format (`YYYY-MMDDTHH:
+MM:SS.mmmmmm`). Alternative formats can be generated using `strftime()`.
+
+日期时间对象的默认字符串表示使用 `ISO-8601` 格式（`YYYY-MMDDTHH: MM:SS.mmmmmm`）。
+可以使用 `strftime()` 生成其他格式。
+
+> Use `datetime.strptime()` to convert formatted strings to `datetime` instances.
+
+使用 `datetime.strptime()` 将格式化字符串转换为 `datetime` 实例。
+
+```text
+ISO : 2021-08-31 14:04:04.726145
+strftime: Tue Aug 31 14:04:04 2021
+strptime: Tue Aug 31 14:04:04 2021
+
+```
+
+
+> The same formatting codes can be used with Python’s string formatting mini-language2 by
+placing them after the : in the field specification of the format string.
+
+相同的格式代码可以与 Python 的字符串格式 mini-language2 一起使用，方法是将它们放在格式字符串的字段规范中之后。
+
+> Each datetime format code must be prefixed with `%`, and subsequent colons are treated as
+literal characters to be included in the output.
+
+每个日期时间格式代码都必须以“%”为前缀，随后的冒号被视为要包含在输出中的文字字符。
+
+
+```python
+# 4_26_datetime_format.py
+import datetime
+
+today = datetime.datetime.today()
+print('ISO :', today)
+print('format(): {:%a %b %d %H:%M:%S %Y}'.format(today))
+
+```
+
+
+```text
+ISO : 2021-08-31 14:12:35.510199
+format(): Tue Aug 31 14:12:35 2021
+
+```
+
+
+### 4.2.8 Time Zones
+
+> Within `datetime`, time zones are represented by subclasses of `tzinfo`. Since `tzinfo` is an
+abstract base class, applications need to define a subclass and provide appropriate implementations
+for a few methods to make it useful.
+
+在 datetime 中，时区由 tzinfo 的子类表示。
+由于 `tzinfo` 是一个抽象基类，应用程序需要定义一个子类并为一些方法提供适当的实现以使其有用
+
+> `datetime` does include a somewhat naive implementation in the class `timezone` that uses
+a fixed offset from UTC. This implementation does not support different offset values on
+different days of the year, such as where daylight savings time applies, or where the offset
+from UTC has changed over time.
+
+`datetime` 确实在类 `timezone` 中包含了一个有点幼稚的实现，它使用与 UTC 的固定偏移量。
+此实现不支持一年中不同日期的不同偏移值，例如适用夏令时的地方，或者与 UTC 的偏移量随时间发生变化的地方。
+
+> To convert a `datetime` value from one time zone to another, use `astimezone()`. In the
+preceding example, two separate time zones 6 hours on either side of UTC are shown, and
+the `utc` instance from `datetime.timezone` is also used for reference. The final output line
+shows the value in the system time zone, which was obtained by calling `astimezone()` with
+no argument.
+
+
+要将 `datetime` 值从一个时区转换为另一个时区，请使用 `astimezone()`。
+在前面的示例中，显示了 UTC 两侧 6 小时的两个独立时区，并且还使用了来自 `datetime.timezone` 的 `utc` 实例作为参考。
+最后的输出行显示了系统时区中的值，该值是通过不带参数调用 `astimezone()` 获得的。
+
+
+> The third-party module `pytz3` is a better implementation for time zones. It supports named time zones,
+and the offset database is kept up-to-date as changes are made by political bodies around the world.
+
+第三方模块`pytz3` 是一个更好的时区实现。
+它支持命名时区，并且偏移数据库随着世界各地政治机构的变化而保持最新。
+
+
+```python
+# 4_27_datetime_timezone.py
+import datetime
+
+min6 = datetime.timezone(datetime.timedelta(hours=-6))
+plus6 = datetime.timezone(datetime.timedelta(hours=6))
+d = datetime.datetime.now(min6)
+
+print(min6, ':', d)
+print(datetime.timezone.utc, ':', d.astimezone(datetime.timezone.utc))
+print(plus6, ':', d.astimezone(plus6))
+
+# Convert to the current system timezone.
+d_system = d.astimezone()
+print(d_system.tzinfo, ' :', d_system)
+
+```
+
+
+```text
+UTC-06:00 : 2021-08-31 00:25:25.201425-06:00
+UTC : 2021-08-31 06:25:25.201425+00:00
+UTC+06:00 : 2021-08-31 12:25:25.201425+06:00
+中国标准时间  : 2021-08-31 14:25:25.201425+08:00
+
+```
+
+
