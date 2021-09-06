@@ -1288,3 +1288,346 @@ UTC+06:00 : 2021-08-31 12:25:25.201425+06:00
 ```
 
 
+## 4.3 calendar: Work with Dates
+
+> The `calendar` module defines the `Calendar` class, which encapsulates calculations for values
+such as the dates of the weeks in a given month or year. In addition, the `TextCalendar` and
+`HTMLCalendar` classes can produce preformatted output.
+
+`calendar` 模块定义了 `Calendar` 类，该类封装了对给定月份或年份中的周日期等值的计算。
+此外，`TextCalendar` 和 `HTMLCalendar` 类可以生成预先格式化的输出。
+
+
+### 4.3.1 Formatting Examples
+
+> The `prmonth()` method is a simple function that produces the formatted text output for a
+month.
+
+`prmonth()` 方法是一个简单的函数，可以生成一个月的格式化文本输出。
+
+> The example configures `TextCalendar` to start weeks on Sunday, following the U.S. convention.
+The default is to use the European convention of starting a week on Monday. The
+example produces the following output.
+
+该示例将“TextCalendar”配置为按照美国惯例从星期日开始。
+默认是使用从星期一开始一周的欧洲惯例。
+该示例产生以下输出。
+
+```python
+# 4_28_calendar_textcalendar.py
+import calendar
+
+c = calendar.TextCalendar(calendar.SUNDAY)
+c.prmonth(2021, 9)
+
+```
+
+
+```text
+   September 2021
+Su Mo Tu We Th Fr Sa
+          1  2  3  4
+ 5  6  7  8  9 10 11
+12 13 14 15 16 17 18
+19 20 21 22 23 24 25
+26 27 28 29 30
+
+```
+
+
+> A similar HTML table can be produced with `HTMLCalendar` and `formatmonth()`. The
+rendered output looks roughly the same as the plain text version, but is wrapped with
+HTML tags. Each table cell has a class attribute corresponding to the day of the week, so
+the HTML can be styled through CSS.
+
+可以使用`HTMLCalendar` 和`formatmonth()` 生成类似的HTML 表格。
+渲染的输出看起来与纯文本版本大致相同，但用 HTML 标签包装。
+每个表格单元格都有一个对应星期几的 class 属性，因此可以通过 CSS 对 HTML 进行样式设置。
+
+
+> To produce output in a format other than one of the defaults, use `calendar` to calculate
+the dates and organize the values into week and month ranges, then iterate over the result.
+The `weekheader()`, `monthcalendar()`, and `yeardays2calendar()` methods of `Calendar` are
+especially useful for this purpose.
+
+要以默认格式以外的格式生成输出，请使用 `calendar` 计算日期并将值组织到周和月范围内，然后迭代结果。
+`Calendar` 的 `weekheader()`、`monthcalendar()` 和 `yeardays2calendar()` 方法对于这个目的特别有用。
+
+
+> Calling `yeardays2calendar()` produces a sequence of “month row” lists. Each list of
+months includes each month as another list of weeks. The weeks are lists of tuples made up
+of day number (1–31) and weekday number (0–6). Days that fall outside of the month have
+a day number of 0.
+
+调用 `yeardays2calendar()` 会生成一系列“月份行”列表。
+每个月列表包括每个月作为另一个周列表。
+周是由天数 (1-31) 和工作日数 (0-6) 组成的元组列表。
+月外的天数为 0
+
+> Calling `yeardays2calendar(2017,3)` returns data for 2017, organized with three months
+per row.
+
+调用 `yeardays2calendar(2017,3)` 返回 2017 年的数据，每行组织三个月。
+
+```python
+# 4_29_calendar_yeardays2calendar.py
+import calendar
+import pprint
+
+cal = calendar.Calendar(calendar.SUNDAY)
+
+cal_data = cal.yeardays2calendar(2017, 3)
+print('len(cal_data) :', len(cal_data))
+
+top_months = cal_data[0]
+print('len(top_months) :', len(top_months))
+
+first_month = top_months[0]
+print('len(first_month) :', len(first_month))
+
+print('first_month:')
+pprint.pprint(first_month, width=65)
+
+```
+
+```text
+len(cal_data) : 4
+len(top_months) : 3
+len(first_month) : 5
+first_month:
+[[(1, 6), (2, 0), (3, 1), (4, 2), (5, 3), (6, 4), (7, 5)],
+ [(8, 6), (9, 0), (10, 1), (11, 2), (12, 3), (13, 4), (14, 5)],
+ [(15, 6), (16, 0), (17, 1), (18, 2), (19, 3), (20, 4), (21, 5)],
+ [(22, 6), (23, 0), (24, 1), (25, 2), (26, 3), (27, 4), (28, 5)],
+ [(29, 6), (30, 0), (31, 1), (0, 2), (0, 3), (0, 4), (0, 5)]]
+
+```
+
+
+> This is equivalent to the data used by `formatyear()`.
+
+这相当于`formatyear()`使用的数据。
+
+
+```python
+# 4_30_calendar_formatyear.py
+import calendar
+
+cal = calendar.TextCalendar(calendar.SUNDAY)
+print(cal.formatyear(2021, 2, 1, 1, 3))
+
+```
+
+```text
+                              2021
+
+      January               February               March
+Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+                1  2      1  2  3  4  5  6      1  2  3  4  5  6
+ 3  4  5  6  7  8  9   7  8  9 10 11 12 13   7  8  9 10 11 12 13
+10 11 12 13 14 15 16  14 15 16 17 18 19 20  14 15 16 17 18 19 20
+17 18 19 20 21 22 23  21 22 23 24 25 26 27  21 22 23 24 25 26 27
+24 25 26 27 28 29 30  28                    28 29 30 31
+31
+
+       April                  May                   June
+Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+             1  2  3                     1         1  2  3  4  5
+ 4  5  6  7  8  9 10   2  3  4  5  6  7  8   6  7  8  9 10 11 12
+11 12 13 14 15 16 17   9 10 11 12 13 14 15  13 14 15 16 17 18 19
+18 19 20 21 22 23 24  16 17 18 19 20 21 22  20 21 22 23 24 25 26
+25 26 27 28 29 30     23 24 25 26 27 28 29  27 28 29 30
+                      30 31
+
+        July                 August              September
+Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+             1  2  3   1  2  3  4  5  6  7            1  2  3  4
+ 4  5  6  7  8  9 10   8  9 10 11 12 13 14   5  6  7  8  9 10 11
+11 12 13 14 15 16 17  15 16 17 18 19 20 21  12 13 14 15 16 17 18
+18 19 20 21 22 23 24  22 23 24 25 26 27 28  19 20 21 22 23 24 25
+25 26 27 28 29 30 31  29 30 31              26 27 28 29 30
+
+      October               November              December
+Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa
+                1  2      1  2  3  4  5  6            1  2  3  4
+ 3  4  5  6  7  8  9   7  8  9 10 11 12 13   5  6  7  8  9 10 11
+10 11 12 13 14 15 16  14 15 16 17 18 19 20  12 13 14 15 16 17 18
+17 18 19 20 21 22 23  21 22 23 24 25 26 27  19 20 21 22 23 24 25
+24 25 26 27 28 29 30  28 29 30              26 27 28 29 30 31
+31
+
+
+```
+
+
+> The `day_name`, `day_abbr`, `month_name`, and `month_abbr` module attributes are useful for
+producing custom-formatted output (e.g., including links in the HTML output). They are
+automatically configured correctly for the current locale.
+
+`day_name`、`day_abbr`、`month_name` 和 `month_abbr` 模块属性可用于生成自定义格式的输出（例如，包括 HTML 输出中的链接）。
+它们会自动为当前语言环境正确配置。
+
+
+### 4.3.2 Locales
+
+> To produce a calendar formatted for a locale other than the current default, use `Locale-
+TextCalendar` or `LocaleHTMLCalendar`.
+
+要为当前默认设置以外的区域设置格式生成日历，请使用`Locale-TextCalendar`或`LocaleHTMLCalendar`。
+
+
+> The first day of the week is not part of the locale settings. Instead, its value is taken
+from the argument to the calendar class, just as occurs with the regular `TextCalendar` class.
+
+一周的第一天不是区域设置的一部分。
+相反，它的值取自日历类的参数，就像常规的`TextCalendar`类一样。
+
+
+```python
+# 4_32_calendar_locale.py
+import calendar
+
+c = calendar.LocaleTextCalendar(locale='en_US')
+c.prmonth(2021, 7)
+
+print()
+
+c = calendar.LocaleTextCalendar(locale='fr_FR')
+c.prmonth(2021, 7)
+
+```
+
+```text
+     July 2021
+Mo Tu We Th Fr Sa Su
+          1  2  3  4
+ 5  6  7  8  9 10 11
+12 13 14 15 16 17 18
+19 20 21 22 23 24 25
+26 27 28 29 30 31
+
+    juillet 2021
+lu ma me je ve sa di
+          1  2  3  4
+ 5  6  7  8  9 10 11
+12 13 14 15 16 17 18
+19 20 21 22 23 24 25
+26 27 28 29 30 31
+
+
+```
+
+
+### 4.3.3 Calculating Dates
+
+> Although the calendar module focuses mostly on printing full calendars in various formats,
+it also provides functions useful for working with dates in other ways, such as calculating
+dates for a recurring event. For example, the Python Atlanta User’s Group meets on the
+second Thursday of every month. To calculate the dates for the meetings for a year, use the
+return value of `monthcalendar()`.
+
+尽管日历模块主要侧重于以各种格式打印完整日历，但它也提供了以其他方式处理日期的有用功能，例如计算重复事件的日期。
+例如，Python Atlanta 用户组在每个月的第二个星期四开会。
+要计算一年的会议日期，请使用`monthcalendar()`的返回值。
+
+
+> Some days have a 0 value. Those days of the week overlap with the given month, but
+are part of another month.
+
+有些日子的值是 0。
+一周中的那些日子与给定的月份重叠，但属于另一个月份的一部分。
+
+
+
+```python
+# 4_32_calendar_monthcalendar.py
+import calendar
+import pprint
+
+pprint.pprint(calendar.monthcalendar(2021, 7))
+
+```
+
+```text
+[[0, 0, 0, 1, 2, 3, 4],
+ [5, 6, 7, 8, 9, 10, 11],
+ [12, 13, 14, 15, 16, 17, 18],
+ [19, 20, 21, 22, 23, 24, 25],
+ [26, 27, 28, 29, 30, 31, 0]]
+
+```
+
+
+> The first day of the week defaults to Monday. It is possible to change that value by
+calling `setfirstweekday()`. An even more convenient approach in this case is to skip that
+step, since the calendar module includes constants for indexing into the date ranges returned
+by `monthcalendar()`.
+
+一周的第一天默认为星期一。
+可以通过调用 `setfirstweekday()` 来更改该值。
+在这种情况下，更方便的方法是跳过该步骤，因为日历模块包含用于索引到`monthcalendar()`返回的日期范围的常量。
+
+
+> To calculate the group meeting dates for a year, assuming they are always on the second
+Thursday of every month, look at the output of `monthcalendar()` to find the dates on
+which Thursdays fall. The first and last weeks of the month are padded with 0 values as
+placeholders for the days falling in the preceding and subsequent months, respectively. For
+example, if a month starts on a Friday, the value in the first week in the Thursday position
+will be 0.
+
+要计算一年的小组会议日期，假设它们总是在每个月的第二个星期四，请查看`monthcalendar()`的输出以找到星期四所在的日期。
+该月的第一周和最后一周分别用 0 值作为占位符填充前几个月和后几个月的天数。
+例如，如果一个月从星期五开始，则星期四位置的第一周的值将为 0。
+
+
+```python
+# 4_33_calendar_secondthursday.py
+import calendar
+import sys
+
+year = int(sys.argv[1])
+
+# Show every month.
+for month in range(1, 13):
+    # Compute the dates for each week that overlaps the month.
+    c = calendar.monthcalendar(year, month)
+    first_week = c[0]
+    second_week = c[1]
+    third_week = c[2]
+
+    # If there is a Thursday in the first week,
+    # the second Thursday is in the second week.
+    # Otherwise, the second Thursday must be in
+    # the third week.
+    if first_week[calendar.THURSDAY]:
+        meeting_date = second_week[calendar.THURSDAY]
+    else:
+        meeting_date = third_week[calendar.THURSDAY]
+    print('{:>3}: {:>2}'.format(calendar.month_abbr[month], meeting_date))
+
+```
+
+> Thus, the meeting schedule for the year is as follows:
+
+因此，今年的会议时间表如下：
+
+```text
+python 4_33_calendar_secondthursday.py 2021
+Jan: 14
+Feb: 11
+Mar: 11
+Apr:  8
+May: 13
+Jun: 10
+Jul:  8
+Aug: 12
+Sep:  9
+Oct: 14
+Nov: 11
+Dec:  9
+
+```
+
+
+
+
