@@ -211,3 +211,484 @@ Zero padding:
 01.10
 
 ```
+
+
+### 5.1.3 Arithmetic
+
+> `Decimal` overloads the simple arithmetic operators so instances can be manipulated in much
+the same way as the built-in numeric types.
+
+`Decimal` 重载了简单的算术运算符，因此可以以与内置数字类型大致相同的方式操作实例。
+
+
+> `Decimal` operators also accept integer arguments. In contrast, floating-point values must
+be converted to `Decimal` instances before they can be used by these operators.
+
+`Decimal` 运算符也接受整数参数。
+相比之下，浮点值必须先转换为“Decimal”实例，然后才能被这些运算符使用。
+
+
+> Beyond basic arithmetic, `Decimal` includes methods to find base 10 logarithms and natural
+logarithms. The return values from `log10()` and `ln()` are Decimal instances, so they
+can be used directly in formulas with other values.
+
+除了基本算术，`Decimal`还包括查找以 10 为底的对数和自然对数的方法。
+`log10()` 和 `ln()` 的返回值是 Decimal 实例，因此它们可以直接用于具有其他值的公式中。
+
+
+```python
+# 5_4_decimal_operators.py
+import decimal
+
+a = decimal.Decimal('5.1')
+b = decimal.Decimal('3.14')
+c = 4
+d = 3.14
+
+print('a =', repr(a))
+print('b =', repr(b))
+print('c =', repr(c))
+print('d =', repr(d))
+print()
+
+print('a + b =', a + b)
+print('a - b =', a - b)
+print('a * b =', a * b)
+print('a / b =', a / b)
+print()
+
+print('a + c =', a + c)
+print('a - c =', a - c)
+print('a * c =', a * c)
+print('a / c =', a / c)
+print()
+
+print('a + d =', end=' ')
+try:
+    print(a + d)
+except TypeError as e:
+    print(e)
+
+```
+
+```text
+a = Decimal('5.1')
+b = Decimal('3.14')
+c = 4
+d = 3.14
+
+a + b = 8.24
+a - b = 1.96
+a * b = 16.014
+a / b = 1.624203821656050955414012739
+
+a + c = 9.1
+a - c = 1.1
+a * c = 20.4
+a / c = 1.275
+
+a + d = unsupported operand type(s) for +: 'decimal.Decimal' and 'float'
+
+```
+
+
+### 5.1.4 Special Values
+
+> In addition to the expected numerical values, `Decimal` can represent several special values,
+including positive and negative values for infinity, “not a number” (`NaN`), and zero.
+
+除了预期的数值外，`Decimal` 还可以表示几个特殊值，包括无穷大的正负值、“非数字”(`NaN`) 和零。
+
+
+> Adding to infinite values returns another infinite value. Comparing for equality with `NaN`
+always returns false, whereas comparing for inequality with this value always returns true.
+Comparing for sort order against `NaN` is undefined and results in an error.
+
+添加到无限值返回另一个无限值。
+与`NaN`比较相等总是返回false，而与此值比较不相等总是返回true。
+将排序顺序与`NaN`进行比较未定义并导致错误。
+
+
+```python
+# 5_5_decimal_special.py
+import decimal
+
+for value in ['Infinity', 'NaN', '0']:
+    print(decimal.Decimal(value), decimal.Decimal('-' + value))
+print()
+
+# Math with infinity
+print('Infinity + 1:', (decimal.Decimal('Infinity') + 1))
+print('-Infinity + 1:', (decimal.Decimal('-Infinity') + 1))
+
+# Print comparing NaN
+print(decimal.Decimal('NaN') == decimal.Decimal('Infinity'))
+print(decimal.Decimal('NaN') != decimal.Decimal(1))
+
+```
+
+
+```text
+Infinity -Infinity
+NaN -NaN
+0 -0
+
+Infinity + 1: Infinity
+-Infinity + 1: -Infinity
+False
+True
+
+
+```
+
+
+### 5.1.5 Context
+
+> So far, all of the examples have used the default behaviors of the `decimal` module. It is
+possible to override settings such as the precision maintained, the way in which rounding is
+performed, and error handling by using a context. Contexts can be applied for all `Decimal`
+instances in a thread or locally within a small code region.
+
+到目前为止，所有示例都使用了 `decimal` 模块的默认行为。
+可以使用上下文覆盖设置，例如保持的精度、执行舍入的方式以及错误处理。
+上下文可以应用于线程中或本地小代码区域内的所有“十进制”实例。
+
+
+#### 5.1.5.1 Current Context
+
+> To retrieve the current global context, use `getcontext`.
+
+要检索当前的全局上下文，请使用 `getcontext`。
+
+
+> The example script shows the public properties of a `Context`.
+
+示例脚本显示了 `Context` 的公共属性。
+
+```python
+# 5_6_decimal_getcontext.py
+import decimal
+
+context = decimal.getcontext()
+print('Emax =', context.Emax)
+print('Emin =', context.Emin)
+print('capitals =', context.capitals)
+print('prec =', context.prec)
+print('rounding =', context.rounding)
+print('flags =')
+for f, v in context.flags.items():
+    print(' {}: {}'.format(f, v))
+print('traps =')
+for t, v in context.traps.items():
+    print(' {}: {}'.format(t, v))
+
+```
+
+```text
+Emax = 999999
+Emin = -999999
+capitals = 1
+prec = 28
+rounding = ROUND_HALF_EVEN
+flags =
+ <class 'decimal.InvalidOperation'>: False
+ <class 'decimal.FloatOperation'>: False
+ <class 'decimal.DivisionByZero'>: False
+ <class 'decimal.Overflow'>: False
+ <class 'decimal.Underflow'>: False
+ <class 'decimal.Subnormal'>: False
+ <class 'decimal.Inexact'>: False
+ <class 'decimal.Rounded'>: False
+ <class 'decimal.Clamped'>: False
+traps =
+ <class 'decimal.InvalidOperation'>: True
+ <class 'decimal.FloatOperation'>: False
+ <class 'decimal.DivisionByZero'>: True
+ <class 'decimal.Overflow'>: True
+ <class 'decimal.Underflow'>: False
+ <class 'decimal.Subnormal'>: False
+ <class 'decimal.Inexact'>: False
+ <class 'decimal.Rounded'>: False
+ <class 'decimal.Clamped'>: False
+
+```
+
+
+#### 5.1.5.2 Precision
+
+> The `prec` attribute of the context controls the precision maintained for new values created
+as a result of arithmetic. Literal values are maintained as described.
+
+上下文的`prec` 属性控制为算术结果创建的新值保持的精度。
+文字值按所述进行维护。
+
+
+> To change the precision, assign a new value between 1 and decimal.`MAX_PREC` directly
+to the attribute.
+
+要更改精度，请直接为属性分配一个介于 1 和小数之间的新值。`MAX_PREC`。
+
+
+```python
+# 5_7_decimal_precision.py
+import decimal
+
+d = decimal.Decimal('0.123456')
+
+for i in range(1, 5):
+    decimal.getcontext().prec = i
+    print(i, ':', d, d * 1)
+
+```
+
+```text
+1 : 0.123456 0.1
+2 : 0.123456 0.12
+3 : 0.123456 0.123
+4 : 0.123456 0.1235
+```
+
+
+#### 5.1.5.3 Rounding
+
+> There are several options for rounding to keep values within the desired precision.
+
+有多种四舍五入选项可将值保持在所需的精度范围内。
+
+> `ROUND_CEILING` Always round upward toward infinity.
+
+`ROUND_CEILING` 总是向上舍入到无穷大。
+
+> `ROUND_DOWN` Always round toward zero.
+
+`ROUND_DOWN` 总是向零舍入。
+
+> `ROUND_FLOOR` Always round down toward negative infinity.
+
+`ROUND_FLOOR` 总是向下取整到负无穷大。
+
+> `ROUND_HALF_DOWN` Round away from zero if the last significant digit is greater than or equal
+to 5; otherwise, round toward zero.
+
+`ROUND_HALF_DOWN` 如果最后一位有效数字大于或等于 5，则从零开始舍入； 否则，向零舍入。
+
+> `ROUND_HALF_EVEN` Like ROUND_HALF_DOWN except that if the value is 5, then the preceding digit
+is examined. Even digits cause the result to be rounded down, and odd digits cause the
+result to be rounded up.
+
+`ROUND_HALF_EVEN` 与 ROUND_HALF_DOWN 类似，但如果值为 5，则检查前面的数字。
+偶数位导致结果四舍五入，奇数位导致结果四舍五入。
+
+> `ROUND_HALF_UP` Like `ROUND_HALF_DOWN` except that if the last significant digit is 5, the value
+is rounded away from zero.
+
+`ROUND_HALF_UP` 与 `ROUND_HALF_DOWN` 类似，但如果最后一位有效数字是 5，则该值从零舍入。
+
+> `ROUND_UP` Round away from zero.
+
+`ROUND_UP` 从零开始舍入。
+
+> `ROUND_05UP` Round away from zero if the last digit is 0 or 5; otherwise, round toward zero.
+
+`ROUND_05UP` 如果最后一位数字是 0 或 5，则从零开始舍入； 否则，向零舍入。
+
+
+> This program shows the effect of rounding the same value to different levels of precision
+using the different algorithms.
+
+该程序显示了使用不同算法将相同值四舍五入到不同精度级别的效果。
+
+```python
+# 5_8_decimal_rounding.py
+import decimal
+
+context = decimal.getcontext()
+
+ROUNDING_MODES = [
+    'ROUND_CEILING',
+    'ROUND_DOWN',
+    'ROUND_FLOOR',
+    'ROUND_HALF_DOWN',
+    'ROUND_HALF_EVEN',
+    'ROUND_HALF_UP',
+    'ROUND_UP',
+    'ROUND_05UP',
+]
+
+header_fmt = '{:10} ' + ' '.join(['{:^8}'] * 6)
+
+print(header_fmt.format(
+    ' ',
+    '1/8 (1)', '-1/8 (1)',
+    '1/8 (2)', '-1/8 (2)',
+    '1/8 (3)', '-1/8 (3)',
+))
+for rounding_mode in ROUNDING_MODES:
+    print('{0:10}'.format(rounding_mode.partition('_')[-1]), end=' ')
+    for precision in [1, 2, 3]:
+        context.prec = precision
+        context.rounding = getattr(decimal, rounding_mode)
+        value = decimal.Decimal(1) / decimal.Decimal(8)
+        print('{0:^8}'.format(value), end=' ')
+        value = decimal.Decimal(-1) / decimal.Decimal(8)
+        print('{0:^8}'.format(value), end=' ')
+    print()
+
+```
+
+```text
+           1/8 (1)  -1/8 (1) 1/8 (2)  -1/8 (2) 1/8 (3)  -1/8 (3)
+CEILING      0.2      -0.1     0.13    -0.12    0.125    -0.125  
+DOWN         0.1      -0.1     0.12    -0.12    0.125    -0.125  
+FLOOR        0.1      -0.2     0.12    -0.13    0.125    -0.125  
+HALF_DOWN    0.1      -0.1     0.12    -0.12    0.125    -0.125  
+HALF_EVEN    0.1      -0.1     0.12    -0.12    0.125    -0.125  
+HALF_UP      0.1      -0.1     0.13    -0.13    0.125    -0.125  
+UP           0.2      -0.2     0.13    -0.13    0.125    -0.125  
+05UP         0.1      -0.1     0.12    -0.12    0.125    -0.125  
+
+```
+
+
+#### 5.1.5.4 Local Context
+
+> The context can be applied to a block of code using the `with` statement.
+
+可以使用 `with` 语句将上下文应用于代码块。
+
+> The `Context` supports the context manager API used by `with`, so the settings apply only
+within the block.
+
+ `Context` 支持 `with` 使用的上下文管理器 API，因此设置仅适用于块内
+
+
+```python
+# 5_9_decimal_context_manager.py
+import decimal
+
+with decimal.localcontext() as c:
+        c.prec = 2
+        print('Local precision:', c.prec)
+        print('3.14 / 3 =', (decimal.Decimal('3.14') / 3))
+
+print()
+print('Default precision:', decimal.getcontext().prec)
+print('3.14 / 3 =', (decimal.Decimal('3.14') / 3))
+
+```
+
+
+```text
+Local precision: 2
+3.14 / 3 = 1.0
+
+Default precision: 28
+3.14 / 3 = 1.046666666666666666666666667
+```
+
+
+#### 5.1.5.5 Per-Instance Context
+
+> Contexts also can be used to construct `Decimal` instances, which then inherit the precision
+and rounding arguments of the conversion from the context.
+
+上下文还可用于构造`Decimal`实例，然后从上下文继承转换的精度和舍入参数。
+
+
+> This approach lets an application select the precision of constant values separately from the
+precision of user data, for example.
+
+例如，这种方法让应用程序可以与用户数据的精度分开选择常量值的精度。
+
+```python
+# 5_10_decimal_instance_context.py
+import decimal
+
+# Set up a context with limited precision.
+c = decimal.getcontext().copy()
+c.prec = 3
+
+# Create our constant.
+pi = c.create_decimal('3.1415')
+
+# The constant value is rounded off.
+print('PI :', pi)
+
+# The result of using the constant uses the global context.
+print('RESULT:', decimal.Decimal('2.01') * pi)
+
+```
+
+```text
+PI : 3.14
+RESULT: 6.3114
+```
+
+
+
+#### 5.1.5.6 Threads
+
+> The “global” context is actually thread-local, so each thread can potentially be configured
+using different values.
+
+“全局”上下文实际上是线程本地的，因此每个线程都可能使用不同的值进行配置。
+
+
+> This example creates a new context using the specified values, then installs it within each
+thread.
+
+此示例使用指定的值创建一个新上下文，然后将其安装在每个线程中。
+
+
+```python
+# 5_11_decimal_thread_context.py
+import decimal
+import threading
+from queue import PriorityQueue
+
+
+class Multiplier(threading.Thread):
+    def __init__(self, a, b, prec, q):
+        self.a = a
+        self.b = b
+        self.prec = prec
+        self.q = q
+        threading.Thread.__init__(self)
+
+    def run(self):
+        c = decimal.getcontext().copy()
+        c.prec = self.prec
+        decimal.setcontext(c)
+        self.q.put((self.prec, a * b))
+
+
+a = decimal.Decimal('3.14')
+b = decimal.Decimal('1.234')
+# A PriorityQueue will return values sorted by precision,
+# no matter in which order the threads finish.
+q = PriorityQueue()
+threads = [Multiplier(a, b, i, q) for i in range(1, 6)]
+for t in threads:
+    t.start()
+
+for t in threads:
+    t.join()
+
+for i in range(5):
+    prec, value = q.get()
+    print('{} {}'.format(prec, value))
+
+```
+
+
+```text
+1 4
+2 3.9
+3 3.87
+4 3.875
+5 3.8748
+
+```
+
+
+## 5.2 fractions: Rational Numbers
