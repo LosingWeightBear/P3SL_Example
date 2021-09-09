@@ -920,3 +920,264 @@ No limit = 3141592653589793/1000000000000000
 
 
 ## 5.3 random: Pseudorandom Number Generators
+
+> The `random` module provides a fast pseudorandom number generator based on the Mersenne
+Twister algorithm. Originally developed to produce inputs for Monte Carlo simulations,
+Mersenne Twister generates numbers with nearly uniform distribution and a large period,
+making it suited to a wide range of applications.
+
+`random` 模块提供了一个基于 Mersenne Twister 算法的快速伪随机数生成器。
+Mersenne Twister 最初开发用于为 Monte Carlo 模拟生成输入，生成几乎均匀分布和大周期的数字，使其适用于广泛的应用。
+
+### 5.3.1 Generating Random Numbers
+
+> The `random()` function returns the next random floating-point value from the generated
+sequence. All of the return values fall within the range `0 <= n < 1.0`.
+
+`random()` 函数从生成的序列中返回下一个随机浮点值。
+所有返回值都在`0 <= n < 1.0`范围内
+
+
+> Running the program repeatedly produces different sequences of numbers.
+
+重复运行该程序会产生不同的数字序列。
+
+```python
+# 5_19_random_random.py
+import random
+
+for i in range(5):
+    print('%04.3f' % random.random(), end=' ')
+    print()
+
+```
+
+
+```text
+0.952 
+0.152 
+0.832 
+0.277 
+0.667 
+
+0.518 
+0.090 
+0.302 
+0.607 
+0.730 
+
+```
+
+
+> To generate numbers in a specific numerical range, use `uniform()` instead.
+
+要生成特定数字范围内的数字，请改用 `uniform()`。
+
+> Pass minimum and maximum values, and `uniform()` adjusts the return values from `random()`
+using the formula `min + (max -min) * random()`.
+
+传递最小值和最大值，然后 `uniform()` 使用公式 `min + (max -min) * random()` 调整来自 `random()` 的返回值。
+
+
+```python
+# 5_20_random_uniform.py
+import random
+
+for i in range(5):
+    print('{:04.3f}'.format(random.uniform(1, 100)), end=' ')
+print()
+
+```
+
+```text
+85.445 9.613 28.778 60.126 66.912
+
+```
+
+
+### 5.3.2 Seeding
+
+> `random()` produces different values each time it is called and has a very large period before it
+repeats any numbers. This is useful for producing unique values or variations, but sometimes
+having the same data set available to be processed in different ways is useful. One technique
+is to use a program to generate random values and save them to be processed by a separate
+step. That may not be practical for large amounts of data, though, so `random` includes the
+`seed()` function for initializing the pseudorandom generator so that it produces an expected
+set of values.
+
+`random()` 每次被调用时都会产生不同的值，并且在它重复任何数字之前有一个非常长的时间段。
+这对于生成唯一值或变化很有用，但有时以不同方式处理相同的数据集也很有用。
+一种技术是使用程序生成随机值并将它们保存以供单独的步骤处理。
+但是，这对于大量数据可能不切实际，因此 `random` 包括 `seed()` 函数用于初始化伪随机生成器，以便它产生一组预期的值。
+
+
+> The seed value controls the first value produced by the formula, which is used to generate
+pseudorandom numbers. Since the formula is deterministic, it also sets the full sequence
+produced after the seed is changed. The argument to `seed()` can be any hashable object.
+The default is to use a platform-specific source of randomness, if one is available. Otherwise,
+the current time is used.
+
+种子值控制公式产生的第一个值，用于生成伪随机数。
+由于公式是确定性的，它还设置了改变种子后产生的完整序列。
+`seed()` 的参数可以是任何可散列的对象。
+默认是使用特定于平台的随机源（如果可用）。
+否则，使用当前时间。
+
+```python
+# 5_21_random_seed.py
+import random
+
+random.seed(1)
+for i in range(5):
+    print('{:04.3f}'.format(random.random()), end=' ')
+print()
+
+```
+
+
+```text
+0.134 0.847 0.764 0.255 0.495
+
+0.134 0.847 0.764 0.255 0.495
+```
+
+
+### 5.3.3 Saving State
+
+> The internal state of the pseudorandom algorithm used by `random()` can be saved and used
+to control the numbers produced in subsequent runs. Restoring the previous state before
+continuing reduces the likelihood of repeating values or sequences of values from the earlier
+input. The `getstate()` function returns data that can be used to reinitialize the random
+number generator later with `setstate()`.
+
+`random()` 使用的伪随机算法的内部状态可以被保存并用于控制后续运行中产生的数字。
+在继续之前恢复先前的状态会降低重复来自先前输入的值或值序列的可能性。
+`getstate()` 函数返回的数据可用于稍后使用 `setstate()` 重新初始化随机数生成器。
+
+
+> The data returned by `getstate()` is an implementation detail, so this example saves
+the data to a file with `pickle` (page 396); otherwise, it treats the pseudorandom number
+generator as a black box. If the file exists when the program starts, it loads the old state
+and continues. Each run produces a few numbers before and after saving the state, to show
+that restoring the state causes the generator to produce the same values again.
+
+`getstate()` 返回的数据是一个实现细节，所以这个例子用 `pickle` 将数据保存到一个文件中（第 396 页）；
+否则，它将伪随机数生成器视为黑匣子。
+如果程序启动时文件存在，则加载旧状态并继续。
+每次运行在保存状态之前和之后都会产生一些数字，以表明恢复状态会导致生成器再次产生相同的值。
+
+
+```python
+# 5_22_random_state.py
+import random
+import os
+import pickle
+
+
+if os.path.exists('state.dat'):
+    # Restore the previously saved state.
+    print('Found state.dat, initializing random module')
+    with open('state.dat', 'rb') as f:
+        state = pickle.load(f)
+    random.setstate(state)
+else:
+    # Use a well-known start state.
+    print('No state.dat, seeding')
+    random.seed(1)
+
+# Produce random values.
+for i in range(3):
+    print('{:04.3f}'.format(random.random()), end=' ')
+print()
+
+# Save state for next time.
+with open('state.dat', 'wb') as f:
+    pickle.dump(random.getstate(), f)
+
+# Produce more random values.
+print('\nAfter saving state:')
+for i in range(3):
+    print('{:04.3f}'.format(random.random()), end=' ')
+print()
+
+```
+
+
+```text
+
+No state.dat, seeding
+0.134 0.847 0.764 
+
+After saving state:
+0.255 0.495 0.449 
+
+Found state.dat, initializing random module
+0.028 0.836 0.433 
+
+After saving state:
+0.762 0.002 0.445 
+```
+
+
+### 5.3.4 Random Integers
+
+> `random()` generates floating-point numbers. It is possible to convert the results to integers,
+but using `randint()` to generate integers directly is more convenient.
+
+`random()` 生成浮点数。
+可以将结果转换为整数，但使用 `randint()` 直接生成整数更方便。
+
+
+> The arguments to `randint()` are the ends of the inclusive range for the values. The
+numbers can be positive or negative, but the first value should be less than the second.
+
+`randint()` 的参数是值的包含范围的末端。
+数字可以是正数或负数，但第一个值应小于第二个值。
+
+
+```python
+# 5_23_random_randint.py
+import random
+
+print('[1, 100]:', end=' ')
+
+for i in range(3):
+    print(random.randint(1, 100), end=' ')
+
+print('\n[-5, 5]:', end=' ')
+for i in range(3):
+    print(random.randint(-5, 5), end=' ')
+print()
+
+```
+
+
+```text
+[1, 100]: 50 3 95 
+[-5, 5]: 4 1 -2
+```
+
+
+> `randrange()` is a more general form of selecting values from a range.
+
+`randrange()` 是从范围中选择值的一种更通用的形式。
+
+> `randrange()` supports a `step` argument, in addition to start and stop values, so it is fully
+equivalent to selecting a random value from `range(start,stop,step)`. It is more efficient,
+because the range is not actually constructed.
+
+`randrange()` 支持 `step` 参数，除了开始和停止值，所以它完全等同于从 `range(start,stop,step)` 中选择一个随机值。
+它更有效，因为实际上并未构造范围。
+
+```python
+# 5_24_random_randrange.py
+import random
+
+for i in range(3):
+    print(random.randrange(0, 101, 5), end=' ')
+print()
+```
+
+```text
+5 20 5 
+```
