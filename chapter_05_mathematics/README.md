@@ -1181,3 +1181,51 @@ print()
 ```text
 5 20 5 
 ```
+
+
+
+### 5.3.5 Picking Random Items
+
+> One common use for random number generators is to select a random item from a sequence
+of enumerated values, even if those values are not numbers. `random` includes the `choice()`
+function for making a random selection from a sequence. This example simulates flipping
+a coin 10,000 times to count how many times it comes up heads and how many times it
+comes up tails.
+
+
+随机数生成器的一个常见用途是从枚举值序列中选择一个随机项，即使这些值不是数字。
+`random` 包括用于从序列中进行随机选择的 `choice()` 函数。
+此示例模拟掷硬币 10,000 次以计算它出现正面的次数和出现反面的次数。
+
+> Only two outcomes are allowed. Thus, rather than use numbers and convert them, the
+words “heads” and “tails” are used with `choice()`. The results are tabulated in a dictionary
+using the outcome names as keys.
+
+只允许两种结果。
+因此，不是使用数字并转换它们，而是将单词“heads”和“tails”与“choice()”一起使用。
+使用结果名称作为键将结果列在字典中。
+
+
+```python
+# 5_25_random_choice.py
+import random
+
+outcomes = {
+    'heads': 0,
+    'tails': 0,
+}
+sides = list(outcomes.keys())
+
+for i in range(10000):
+    outcomes[random.choice(sides)] += 1
+
+print('Heads:', outcomes['heads'])
+print('Tails:', outcomes['tails'])
+
+```
+
+
+```text
+Heads: 5036
+Tails: 4964
+```
