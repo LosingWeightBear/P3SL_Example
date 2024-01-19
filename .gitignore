@@ -291,3 +291,7 @@ $RECYCLE.BIN/
 
 # test
 ./test/*
+
+
+.idea
+.vscode
